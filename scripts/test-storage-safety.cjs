@@ -139,6 +139,13 @@ async function repositoryRace() {
 async function flashcardFailure() {
     const { FlashcardDataStore } = load('src/storage/FlashcardDataStore.ts');
     const { FlashcardStorageService } = load('src/flashcard/services/FlashcardStorageService.ts');
+    const { DataValidator } = load('src/storage/DataValidator.ts');
+    const defaults = new FlashcardStorageService({}).createDefaultStorage();
+    assert.equal(DataValidator.validateFlashcardData(defaults).valid, true);
+    assert.equal(DataValidator.validateFlashcardData({ version: '1.0' }).valid, false, 'Missing flashcard collections must be rejected');
+    const invalidCard = structuredClone(defaults);
+    invalidCard.cards.card = { id: 'other', text: 'q', answer: 'a' };
+    assert.equal(DataValidator.validateFlashcardData(invalidCard).valid, false, 'Malformed cards must be rejected before use');
     const vault = memoryVault({ '.hinote/flashcards/cards.json': '{invalid' });
     const store = new FlashcardDataStore(vault.app, '');
     const service = new FlashcardStorageService({}, {

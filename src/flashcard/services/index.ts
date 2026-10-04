@@ -1,7 +1,6 @@
 export { FSRSManager } from "./FSRSManager";
 export { FSRSService } from "./FSRSService";
 export { FSRSAdapter } from "./FSRSAdapter";
-export { FlashcardFactory } from "./FlashcardFactory";
 export { FlashcardCardService } from "./FlashcardCardService";
 export { CardGroupFilterMatcher } from "./CardGroupFilterMatcher";
 export { CardGroupRepository } from "./CardGroupRepository";

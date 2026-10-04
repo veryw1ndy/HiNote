@@ -5,7 +5,6 @@ import { ALL_CARDS_GROUP, UNGROUPED_CARDS_GROUP, PAUSED_CARDS_GROUP, systemCardG
 
 interface CardGroupRepositoryOptions {
     storage: FSRSStorage;
-    saveStorage: () => Promise<void>;
     saveStorageDebounced: () => void;
     emitFlashcardChanged: () => void;
 }
@@ -82,13 +81,6 @@ export class CardGroupRepository {
         // 如果有筛选条件，自动添加符合条件的卡片
         if (group.filter && group.filter.trim().length > 0) {
             this.updateGroupCardIds(newGroup.id);
-        }
-        
-        // 直接保存一次，确保分组数据被保存
-        try {
-            await this.options.saveStorage();
-        } catch (error) {
-            console.error('保存分组数据时出错:', error);
         }
         
         // 触发事件

@@ -42,9 +42,7 @@ export class SelectionBoxController {
         const target = e.target as HTMLElement;
         if (target.closest(".multi-select-actions, .hinote-color-palette, button, input, textarea, select") ||
             target.closest(".highlight-card") ||
-            target.closest(".flashcard-mode") ||
-            target.closest(".flashcard-add-group") ||
-            target.closest(".flashcard-group-action")) {
+            target.closest(".flashcard-mode")) {
             return;
         }
 

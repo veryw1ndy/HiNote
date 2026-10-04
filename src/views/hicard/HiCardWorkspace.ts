@@ -1,7 +1,6 @@
 import { Component, setIcon } from 'obsidian';
 import type CommentPlugin from '../../../main';
 import { FlashcardComponent } from '../../flashcard';
-import type { FlashcardStudySession } from '../../flashcard/components/FlashcardComponent';
 import { LicenseManager } from '../../services/LicenseManager';
 import { t } from '../../i18n';
 import { isSystemCardGroup } from '../../flashcard/types/FlashcardGroups';
@@ -68,16 +67,11 @@ export class HiCardWorkspace extends Component {
     }
 
     async showStudyGroup(groupId: string): Promise<void> {
-        await this.showPage('study', () => true, undefined, groupId);
+        await this.showPage('study', () => true, groupId);
     }
 
-    async showStudySession(session: FlashcardStudySession): Promise<void> {
-        await this.showPage('study', () => true, session, session.groupId);
-    }
-
-    async showCards(createCard = false): Promise<void> {
+    async showCards(): Promise<void> {
         await this.showPage('cards');
-        if (createCard) this.contentEl.querySelector<HTMLButtonElement>('[data-action="create-card"]')?.click();
     }
 
     private async activateStudyGroup(groupId: string): Promise<void> {
@@ -118,7 +112,6 @@ export class HiCardWorkspace extends Component {
     private async showPage(
         page: HiCardPageId,
         isCurrent: () => boolean = () => true,
-        session?: FlashcardStudySession,
         groupId?: string
     ): Promise<void> {
         const generation = ++this.generation;
@@ -134,16 +127,16 @@ export class HiCardWorkspace extends Component {
             back.addEventListener('click', () => { void this.showPage('today'); });
             const group = groupId ? this.plugin.fsrsManager.getCardGroups().find(item => item.id === groupId) : undefined;
             const groupTitle = group ? (isSystemCardGroup(group.id) ? t(group.name) : group.name) : t('Study');
-            bar.createDiv({ cls: 'hicard-study-title', text: session?.title ?? groupTitle });
+            bar.createDiv({ cls: 'hicard-study-title', text: groupTitle });
             const progress = bar.createDiv({ cls: 'flashcard-progress-container' });
             const container = this.contentEl.createDiv({ cls: 'hicard-study-container' });
-            const component = new FlashcardComponent(container, this.plugin, session);
+            const component = new FlashcardComponent(container, this.plugin);
             component.setProgressContainer(progress);
             this.studyComponent = component;
             component.setLicenseManager(new LicenseManager(this.plugin));
             this.addChild(component);
             await component.activate(() => generation === this.generation && isCurrent());
-            if (!session && groupId) await this.activateStudyGroup(groupId);
+            if (groupId) await this.activateStudyGroup(groupId);
             return;
         }
         this.renderManagementPage(page);
@@ -153,8 +146,8 @@ export class HiCardWorkspace extends Component {
         if (page === 'today') {
             new HiCardTodayPage(
                 this.plugin,
-                (session, groupId) => session ? this.showStudySession(session) : this.showPage('study', () => true, undefined, groupId),
-                () => this.showCards(true)
+                groupId => this.showPage('study', () => true, groupId),
+                () => this.showCards()
             ).render(this.contentEl);
             return;
         }
@@ -174,7 +167,9 @@ export class HiCardWorkspace extends Component {
             new HiCardAnalyticsPage(this.plugin).render(this.contentEl);
             return;
         }
-        new HiCardSettingsPage(this.plugin).render(this.contentEl);
+        const settings = new HiCardSettingsPage(this.plugin);
+        settings.render(this.contentEl);
+        this.pageCleanup = () => settings.destroy();
     }
 
     private refreshCurrentPage(): void {

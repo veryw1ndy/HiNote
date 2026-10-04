@@ -72,7 +72,11 @@ export class HiCardAnalyticsPage {
             date.setDate(date.getDate() + index);
             const end = new Date(date);
             end.setDate(end.getDate() + 1);
-            return { date, value: cards.filter(card => card.nextReview >= date.getTime() && card.nextReview < end.getTime()).length };
+            return {
+                date,
+                value: cards.filter(card => card.nextReview < end.getTime()
+                    && (index === 0 || card.nextReview >= date.getTime())).length
+            };
         });
         this.renderBars(section, values);
     }

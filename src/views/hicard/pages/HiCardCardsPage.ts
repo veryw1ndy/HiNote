@@ -68,6 +68,7 @@ export class HiCardCardsPage {
         this.addOption(status, 'paused', t('Paused cards'), this.status);
         status.addEventListener('change', () => {
             this.status = status.value as CardStatusFilter;
+            this.selected.clear();
             this.render(container);
         });
 
@@ -78,12 +79,14 @@ export class HiCardCardsPage {
         }
         group.addEventListener('change', () => {
             this.groupId = group.value;
+            this.selected.clear();
             this.render(container);
         });
     }
 
     private updateSearchQuery(container: HTMLElement, search: HTMLInputElement): void {
         this.query = search.value;
+        this.selected.clear();
         this.render(container);
         const next = container.querySelector<HTMLInputElement>('.hicard-card-search');
         next?.focus();
@@ -369,9 +372,13 @@ export class HiCardCardsPage {
             message: t('Delete this HiCard? The source highlight will be kept.')
         });
         if (!confirmed) return;
-        this.plugin.fsrsManager.deleteCard(card.id);
-        this.selected.delete(card.id);
-        if (this.container) this.render(this.container);
+        try {
+            if (!await this.plugin.fsrsManager.deleteCard(card.id)) return;
+            this.selected.delete(card.id);
+            if (this.container) this.render(this.container);
+        } catch {
+            new Notice(t('Card could not be updated. Please try again.'));
+        }
     }
 
     private openEditor(card: FlashcardState): void {
@@ -425,7 +432,7 @@ export class HiCardCardsPage {
     }
 
     private openAddToGroupMenu(anchor: HTMLElement): void {
-        const groups = this.plugin.fsrsManager.getCardGroups().filter(item => !isSystemCardGroup(item.id));
+        const groups = this.plugin.fsrsManager.getCardGroups().filter(item => !isSystemCardGroup(item.id) && !item.filter?.trim());
         if (groups.length === 0) {
             new Notice(t('Create a manual group to organize cards here.'));
             return;
@@ -434,9 +441,10 @@ export class HiCardCardsPage {
         for (const group of groups) {
             menu.addItem(item => {
                 item.setTitle(group.name).setIcon('folder').onClick(() => {
-                    for (const cardId of this.selected) this.plugin.fsrsManager.addCardToGroup(cardId, group.id);
-                    new Notice(t('Cards added to group'));
-                    if (this.container) this.render(this.container);
+                    void this.plugin.fsrsManager.addCardsToGroup(this.selected, group.id).then(() => {
+                        new Notice(t('Cards added to group'));
+                        if (this.container) this.render(this.container);
+                    }).catch(() => new Notice(t('Card could not be updated. Please try again.')));
                 });
             });
         }
@@ -445,8 +453,12 @@ export class HiCardCardsPage {
     }
 
     private async setSelectedSuspended(suspended: boolean): Promise<void> {
-        await Promise.all(Array.from(this.selected, id => this.plugin.fsrsManager.setCardSuspended(id, suspended)));
-        if (this.container) this.render(this.container);
+        try {
+            await this.plugin.fsrsManager.setCardsSuspended(this.selected, suspended);
+            if (this.container) this.render(this.container);
+        } catch {
+            new Notice(t('Card could not be updated. Please try again.'));
+        }
     }
 
     private async deleteSelected(): Promise<void> {
@@ -455,9 +467,13 @@ export class HiCardCardsPage {
             message: t('Delete {count} selected cards? Source highlights will be kept.', { count: this.selected.size })
         });
         if (!confirmed) return;
-        for (const id of this.selected) this.plugin.fsrsManager.deleteCard(id);
-        this.selected.clear();
-        if (this.container) this.render(this.container);
+        try {
+            await this.plugin.fsrsManager.deleteCards(this.selected);
+            this.selected.clear();
+            if (this.container) this.render(this.container);
+        } catch {
+            new Notice(t('Card could not be updated. Please try again.'));
+        }
     }
 
     private openSource(filePath: string): void {

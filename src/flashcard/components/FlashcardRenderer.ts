@@ -16,7 +16,6 @@ export class FlashcardRenderer {
     private component: FlashcardComponentContext;
     private isMobileView: boolean = false;
     private isSmallScreen: boolean = false;
-    private showingSidebar: boolean = true;
     private activationRenderer: FlashcardActivationRenderer;
     private markdownRenderer: FlashcardMarkdownRenderer;
     private emptyStateRenderer: FlashcardEmptyStateRenderer;
@@ -30,7 +29,6 @@ export class FlashcardRenderer {
         this.cardRenderer = new FlashcardCardRenderer(component, this.markdownRenderer);
         this.isSmallScreen = component.getContainer().clientWidth < 768;
         this.isMobileView = Platform.isMobile || this.isSmallScreen;
-        this.showingSidebar = false;
     }
     
     /**
@@ -44,51 +42,6 @@ export class FlashcardRenderer {
     public dispose(): void { this.markdownRenderer.dispose(); }
     
     /**
-     * 切换侧边栏和内容区域的显示状态
-     */
-    public toggleSidebar() {
-        this.showingSidebar = !this.showingSidebar;
-        this.render();
-    }
-    
-    /**
-     * 获取当前侧边栏的显示状态
-     */
-    public isShowingSidebar(): boolean {
-        return this.showingSidebar;
-    }
-    
-    /**
-     * 显示侧边栏
-     */
-    public showSidebar() {
-        this.showingSidebar = true;
-
-        const container = this.component.getContainer();
-        if (this.isMobileView && this.isSmallScreen) {
-            container.addClass('show-sidebar');
-            container.removeClass('show-content');
-        }
-
-        this.render();
-    }
-    
-    /**
-     * 返回上一级
-     * 在卡片内容页面时，返回到分组列表
-     * 在分组列表页面时，返回到文件列表
-     */
-    public goBack() {
-        if (this.isMobileView && this.isSmallScreen) {
-            if (!this.showingSidebar) {
-                // 如果当前显示卡片内容，返回到分组列表
-                this.showingSidebar = true;
-                this.render();
-            }
-        }
-    }
-    
-    /**
      * 渲染主界面
      */
     public render() {
@@ -100,10 +53,6 @@ export class FlashcardRenderer {
         container.empty();
         this.markdownRenderer.dispose();
         container.addClass('flashcard-mode');
-        const studySession = this.component.getStudySession?.();
-        container.classList.toggle('is-custom-session', Boolean(studySession));
-        this.showingSidebar = false;
-
         this.applyResponsiveClasses(container);
         this.renderProgress(container);
 
@@ -122,8 +71,6 @@ export class FlashcardRenderer {
         this.isMobileView = Platform.isMobile || this.isSmallScreen;
         container.classList.toggle('is-mobile', this.isMobileView);
         container.classList.toggle('is-small-screen', this.isSmallScreen);
-        container.classList.toggle('show-sidebar', this.showingSidebar);
-        container.classList.toggle('show-content', !this.showingSidebar);
     }
 
     public updateLayout(): void {

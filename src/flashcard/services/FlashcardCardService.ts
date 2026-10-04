@@ -1,16 +1,13 @@
 import type { FlashcardState, FSRSStorage } from '../types/FSRSTypes';
 import { CardGroupFilterMatcher } from './CardGroupFilterMatcher';
 import type { CardGroupRepository } from './CardGroupRepository';
-import type { FlashcardFactory } from './FlashcardFactory';
 
 interface FlashcardCardServiceOptions {
     getStorage: () => FSRSStorage;
-    getCardFactory: () => FlashcardFactory;
+    createCard: (text: string, answer: string, filePath?: string) => FlashcardState;
     getGroupRepository: () => CardGroupRepository;
     addCardToGroup: (cardId: string, groupId: string) => boolean;
-    removeCardFromGroup: (cardId: string, groupId: string) => boolean;
     saveDebounced: () => void;
-    emitFlashcardChanged: () => void;
 }
 
 export class FlashcardCardService {
@@ -23,7 +20,7 @@ export class FlashcardCardService {
         sourceId?: string,
         sourceType?: 'highlight' | 'comment'
     ): FlashcardState {
-        const card = this.options.getCardFactory().createCard(text, answer, filePath);
+        const card = this.options.createCard(text, answer, filePath);
 
         if (sourceId && sourceType) {
             card.sourceId = sourceId;
@@ -37,77 +34,16 @@ export class FlashcardCardService {
         return card;
     }
 
-    deleteCard(cardId: string): boolean {
-        const storage = this.options.getStorage();
-        const card = storage.cards[cardId];
-        if (!card) {
-            return false;
-        }
-
-        if (card.groupIds) {
-            for (const groupId of card.groupIds) {
-                this.options.removeCardFromGroup(cardId, groupId);
-            }
-        }
-
-        delete storage.cards[cardId];
-        this.options.saveDebounced();
-        this.options.emitFlashcardChanged();
-        return true;
-    }
-
     getCardsByFile(filePath: string): FlashcardState[] {
-        return this.options.getCardFactory().getCardsByFile(filePath);
+        return Object.values(this.options.getStorage().cards).filter(card => card.filePath === filePath);
     }
 
     getAllCards(): FlashcardState[] {
         return Object.values(this.options.getStorage().cards);
     }
 
-    updateCard(cardId: string, updates: Pick<Partial<FlashcardState>, 'text' | 'answer' | 'filePath'>): boolean {
-        const card = this.options.getStorage().cards[cardId];
-        if (!card) return false;
-        if (typeof updates.text === 'string') card.text = updates.text;
-        if (typeof updates.answer === 'string') card.answer = updates.answer;
-        if (typeof updates.filePath === 'string') card.filePath = updates.filePath || undefined;
-        card.updatedAt = Date.now();
-        this.options.saveDebounced();
-        this.options.emitFlashcardChanged();
-        return true;
-    }
-
-    resetCardProgress(cardId: string): boolean {
-        const storage = this.options.getStorage();
-        const card = storage.cards[cardId];
-        if (!card) return false;
-        const reset = this.options.getCardFactory().createCard(card.text, card.answer, card.filePath);
-        storage.cards[cardId] = {
-            ...reset,
-            id: card.id,
-            createdAt: card.createdAt,
-            updatedAt: Date.now(),
-            groupIds: card.groupIds ? [...card.groupIds] : undefined,
-            sourceId: card.sourceId,
-            sourceType: card.sourceType,
-            suspended: false
-        };
-        this.options.saveDebounced();
-        this.options.emitFlashcardChanged();
-        return true;
-    }
-
     getTotalCardsCount(): number {
-        const allGroups = this.options.getGroupRepository().getCardGroups() || [];
-        if (allGroups.length === 0) {
-            return 0;
-        }
-
-
-
-        const customGroupCards = new Set<string>();
-        allGroups.forEach(group => this.options.getGroupRepository().getCardsByGroupId(group.id).forEach(card => customGroupCards.add(card.id)));
-
-        return customGroupCards.size;
+        return Object.keys(this.options.getStorage().cards).length;
     }
 
     private checkAndAddCardToGroups(card: FlashcardState): number {

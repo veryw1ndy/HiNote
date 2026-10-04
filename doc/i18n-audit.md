@@ -60,7 +60,7 @@
 | Reviews per day:  | 中文 | [src/flashcard/components/controllers/FlashcardGroupModal.ts:162](../src/flashcard/components/controllers/FlashcardGroupModal.ts#L162) |
 | Due | 中文 | [src/flashcard/components/controllers/FlashcardProgress.ts:76](../src/flashcard/components/controllers/FlashcardProgress.ts#L76) |
 | New | 中文 | [src/flashcard/components/controllers/FlashcardProgress.ts:77](../src/flashcard/components/controllers/FlashcardProgress.ts#L77) |
-| Learned | 中文 | [src/flashcard/components/controllers/FlashcardProgress.ts:78](../src/flashcard/components/controllers/FlashcardProgress.ts#L78)、[src/flashcard/components/renderers/FlashcardGroupListRenderer.ts:154](../src/flashcard/components/renderers/FlashcardGroupListRenderer.ts#L154) |
+| Learned | 中文 | [src/flashcard/components/controllers/FlashcardProgress.ts:78](../src/flashcard/components/controllers/FlashcardProgress.ts#L78) |
 | All flashcards completed for today! | 中文 | [src/flashcard/components/controllers/FlashcardReviewQueue.ts:12](../src/flashcard/components/controllers/FlashcardReviewQueue.ts#L12)、[src/flashcard/components/renderers/FlashcardEmptyStateRenderer.ts:103](../src/flashcard/components/renderers/FlashcardEmptyStateRenderer.ts#L103) |
 | No cards due for review | 中文 | [src/flashcard/components/controllers/FlashcardReviewQueue.ts:17](../src/flashcard/components/controllers/FlashcardReviewQueue.ts#L17) |
 | Group completed:  | 中文 | [src/flashcard/components/controllers/FlashcardReviewQueue.ts:20](../src/flashcard/components/controllers/FlashcardReviewQueue.ts#L20)、[src/flashcard/components/renderers/FlashcardEmptyStateRenderer.ts:102](../src/flashcard/components/renderers/FlashcardEmptyStateRenderer.ts#L102) |
@@ -72,13 +72,6 @@
 | No Cards in This Group | 中文 | [src/flashcard/components/renderers/FlashcardEmptyStateRenderer.ts:73](../src/flashcard/components/renderers/FlashcardEmptyStateRenderer.ts#L73) |
 | This group doesn't contain any flashcards yet. Add some flashcards to this group to start learning. | 中文 | [src/flashcard/components/renderers/FlashcardEmptyStateRenderer.ts:77](../src/flashcard/components/renderers/FlashcardEmptyStateRenderer.ts#L77) |
 | . All cards have been reviewed. | 中文 | [src/flashcard/components/renderers/FlashcardEmptyStateRenderer.ts:102](../src/flashcard/components/renderers/FlashcardEmptyStateRenderer.ts#L102) |
-| Add Group | 中文 | [src/flashcard/components/renderers/FlashcardGroupListRenderer.ts:42](../src/flashcard/components/renderers/FlashcardGroupListRenderer.ts#L42) |
-| Delete Group | 中文 | [src/flashcard/components/renderers/FlashcardGroupListRenderer.ts:108](../src/flashcard/components/renderers/FlashcardGroupListRenderer.ts#L108)、[src/flashcard/components/renderers/FlashcardGroupListRenderer.ts:119](../src/flashcard/components/renderers/FlashcardGroupListRenderer.ts#L119) |
-| Are you sure you want to delete group " | 中文 | [src/flashcard/components/renderers/FlashcardGroupListRenderer.ts:120](../src/flashcard/components/renderers/FlashcardGroupListRenderer.ts#L120) |
-| "? | 中文 | [src/flashcard/components/renderers/FlashcardGroupListRenderer.ts:120](../src/flashcard/components/renderers/FlashcardGroupListRenderer.ts#L120) |
-| Delete group failed | 中文 | [src/flashcard/components/renderers/FlashcardGroupListRenderer.ts:133](../src/flashcard/components/renderers/FlashcardGroupListRenderer.ts#L133)、[src/flashcard/components/renderers/FlashcardGroupListRenderer.ts:137](../src/flashcard/components/renderers/FlashcardGroupListRenderer.ts#L137) |
-| Due Today | 中文 | [src/flashcard/components/renderers/FlashcardGroupListRenderer.ts:152](../src/flashcard/components/renderers/FlashcardGroupListRenderer.ts#L152) |
-| New Cards | 中文 | [src/flashcard/components/renderers/FlashcardGroupListRenderer.ts:153](../src/flashcard/components/renderers/FlashcardGroupListRenderer.ts#L153) |
 | Edit the 21 FSRS algorithm weights. Format: JSON array of numbers. | 中文 | [src/flashcard/settings/FlashcardSettingsTab.ts:208](../src/flashcard/settings/FlashcardSettingsTab.ts#L208) |
 | FSRS weights updated successfully | 中文 | [src/flashcard/settings/FlashcardSettingsTab.ts:230](../src/flashcard/settings/FlashcardSettingsTab.ts#L230) |
 | Invalid format. Must be an array of 21 numbers. | 中文 | [src/flashcard/settings/FlashcardSettingsTab.ts:233](../src/flashcard/settings/FlashcardSettingsTab.ts#L233) |

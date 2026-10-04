@@ -10,7 +10,6 @@ import {
     DailyStats
 } from '../types/FSRSTypes';
 import { FSRSService } from './FSRSService';
-import { FlashcardFactory } from './FlashcardFactory';
 import { CardGroupRepository } from './CardGroupRepository';
 import { DailyStatsService } from './DailyStatsService';
 import { FlashcardEventSyncService } from './FlashcardEventSyncService';
@@ -29,7 +28,6 @@ import type CommentPlugin from '../../../main';
 
 export class FSRSManager {
     public fsrsService: FSRSService;
-    private cardFactory: FlashcardFactory;
     private groupRepository: CardGroupRepository;
     private dailyStatsService: DailyStatsService;
     private eventSyncService: FlashcardEventSyncService;
@@ -48,11 +46,6 @@ export class FSRSManager {
         this.plugin = plugin;
         this.storageService = new FlashcardStorageService(plugin, dataManager);
         this.fsrsService = new FSRSService();
-        this.cardFactory = new FlashcardFactory(
-            () => this.requireStorage(),
-            () => this.plugin.eventManager.emitFlashcardChanged(),
-            this.fsrsService
-        );
         this.dailyStatsService = new DailyStatsService({
             getDailyStats: () => this.storage.dailyStats,
             setDailyStats: (dailyStats: DailyStats[]) => {
@@ -86,12 +79,10 @@ export class FSRSManager {
         });
         this.cardService = new FlashcardCardService({
             getStorage: () => this.requireStorage(),
-            getCardFactory: () => this.cardFactory,
+            createCard: (text, answer, filePath) => this.fsrsService.initializeCard(text, answer, filePath),
             getGroupRepository: () => this.groupRepository,
             addCardToGroup: (cardId: string, groupId: string) => this.addCardToGroup(cardId, groupId),
-            removeCardFromGroup: (cardId: string, groupId: string) => this.removeCardFromGroup(cardId, groupId),
-            saveDebounced: () => this.saveStorageDebounced(),
-            emitFlashcardChanged: () => this.plugin.eventManager.emitFlashcardChanged()
+            saveDebounced: () => this.saveStorageDebounced()
         });
         this.uiStateService = new FlashcardUIStateService({
             getStorage: () => this.requireStorage(),
@@ -160,7 +151,6 @@ export class FSRSManager {
     private createGroupRepository(): CardGroupRepository {
         return new CardGroupRepository({
             storage: this.storage,
-            saveStorage: async () => await this.saveStorage(),
             saveStorageDebounced: () => this.saveStorageDebounced(),
             emitFlashcardChanged: () => this.plugin.eventManager.emitFlashcardChanged()
         });
@@ -184,6 +174,22 @@ export class FSRSManager {
             void this.saveStorage().catch(error => console.error('[HiNote] Flashcard save failed:', error));
         }, 1000);
     };
+
+    private runStorageMutation<T>(
+        mutate: (draft: FSRSStorage) => { changed: boolean; result: T }
+    ): Promise<T> {
+        this.requireStorage();
+        return this.saveQueue.run(async () => {
+            const draft: FSRSStorage = JSON.parse(JSON.stringify(this.storage));
+            const outcome = mutate(draft);
+            if (!outcome.changed) return outcome.result;
+            await this.storageService.save(draft);
+            this.storage = draft;
+            this.groupRepository = this.createGroupRepository();
+            if (!this.disposed) this.plugin.eventManager.emitFlashcardChanged();
+            return outcome.result;
+        });
+    }
 
     /**
      * 添加卡片
@@ -218,14 +224,13 @@ export class FSRSManager {
         cardId: string,
         rating: FSRSRating,
         groupId?: string,
-        allowEarlyReview = false,
         studyTimeMs = 0
     ): Promise<FlashcardState | null> {
         if (groupId === PAUSED_CARDS_GROUP) return Promise.resolve(null);
         return this.runReviewTransaction(() => cardId, async () => {
             const card = this.reviewDraft?.cards[cardId];
             const limits = this.createReviewDailyStats();
-            if (!card || card.suspended || (!allowEarlyReview && card.nextReview > Date.now())) return null;
+            if (!card || card.suspended || card.nextReview > Date.now()) return null;
             if (card.lastReview === 0 && !limits.canLearnNewCardsToday(groupId)) return null;
             if (card.lastReview > 0 && card.state !== 1 && card.state !== 3 && !limits.canReviewCardsToday(groupId)) return null;
             return this.reviewService.trackStudyProgress(cardId, rating, groupId, studyTimeMs);
@@ -246,16 +251,20 @@ export class FSRSManager {
     public getUndoCardId(): string | undefined { return this.reviewService.getUndoCardId(); }
 
     public async setCardSuspended(cardId: string, suspended: boolean): Promise<boolean> {
-        this.requireStorage();
-        return this.saveQueue.run(async () => {
-            const current = this.storage.cards[cardId];
-            if (!current) return false;
-            const snapshot: FSRSStorage = JSON.parse(JSON.stringify(this.storage));
-            snapshot.cards[cardId].suspended = suspended;
-            await this.storageService.save(snapshot);
-            if (this.storage.cards[cardId]) this.storage.cards[cardId].suspended = suspended;
-            if (!this.disposed) this.plugin.eventManager.emitFlashcardChanged();
-            return true;
+        return (await this.setCardsSuspended([cardId], suspended)) === 1;
+    }
+
+    public setCardsSuspended(cardIds: Iterable<string>, suspended: boolean): Promise<number> {
+        const ids = new Set(cardIds);
+        return this.runStorageMutation(draft => {
+            let updated = 0;
+            for (const id of ids) {
+                const card = draft.cards[id];
+                if (!card || Boolean(card.suspended) === suspended) continue;
+                card.suspended = suspended;
+                updated++;
+            }
+            return { changed: updated > 0, result: updated };
         });
     }
     public undoLastReview(): Promise<boolean> {
@@ -337,10 +346,7 @@ export class FSRSManager {
         return this.sourceCardService.updateCardsBySourceId(sourceId, sourceType, newText, newAnswer);
     }
 
-    /**
-     * 获取所有卡片的总数（只统计自定义分组中的卡片）
-     * @returns 卡片总数
-     */
+    /** 获取所有卡片的总数。 */
     public getTotalCardsCount(): number {
         return this.cardService.getTotalCardsCount();
     }
@@ -362,21 +368,94 @@ export class FSRSManager {
         this.uiStateService.updateUIState(state);
     }
 
-    /**
-     * 删除卡片
-     * @param cardId 卡片ID
-     * @returns 是否删除成功
-     */
-    public deleteCard(cardId: string): boolean {
-        return this.cardService.deleteCard(cardId);
+    public deleteCard(cardId: string): Promise<boolean> {
+        return this.deleteCards([cardId]).then(count => count === 1);
     }
 
-    public updateCard(cardId: string, updates: Pick<Partial<FlashcardState>, 'text' | 'answer' | 'filePath'>): boolean {
-        return this.cardService.updateCard(cardId, updates);
+    public deleteCards(cardIds: Iterable<string>): Promise<number> {
+        const ids = new Set(cardIds);
+        return this.runStorageMutation(draft => {
+            let deleted = 0;
+            for (const id of ids) {
+                if (!draft.cards[id]) continue;
+                delete draft.cards[id];
+                deleted++;
+            }
+            if (!deleted) return { changed: false, result: 0 };
+            for (const group of draft.cardGroups) {
+                if (group.cardIds) group.cardIds = group.cardIds.filter(id => !ids.has(id));
+            }
+            return { changed: true, result: deleted };
+        });
     }
 
-    public resetCardProgress(cardId: string): boolean {
-        return this.cardService.resetCardProgress(cardId);
+    public updateCard(
+        cardId: string,
+        updates: Pick<Partial<FlashcardState>, 'text' | 'answer' | 'filePath'>,
+        manualGroupIds?: Iterable<string>
+    ): Promise<boolean> {
+        const selectedGroups = manualGroupIds ? new Set(manualGroupIds) : null;
+        return this.runStorageMutation(draft => {
+            const card = draft.cards[cardId];
+            if (!card) return { changed: false, result: false };
+            if (typeof updates.text === 'string') card.text = updates.text;
+            if (typeof updates.answer === 'string') card.answer = updates.answer;
+            if (typeof updates.filePath === 'string') card.filePath = updates.filePath || undefined;
+            card.updatedAt = Date.now();
+            if (selectedGroups) {
+                const dynamicIds = new Set(draft.cardGroups.filter(group => group.filter?.trim()).map(group => group.id));
+                const nextGroupIds = new Set((card.groupIds || []).filter(id => dynamicIds.has(id)));
+                for (const group of draft.cardGroups) {
+                    if (group.filter?.trim()) continue;
+                    const selected = selectedGroups.has(group.id);
+                    group.cardIds = (group.cardIds || []).filter(id => id !== cardId);
+                    if (selected) {
+                        group.cardIds.push(cardId);
+                        nextGroupIds.add(group.id);
+                    }
+                }
+                card.groupIds = [...nextGroupIds];
+            }
+            return { changed: true, result: true };
+        });
+    }
+
+    public addCardsToGroup(cardIds: Iterable<string>, groupId: string): Promise<number> {
+        const ids = new Set(cardIds);
+        return this.runStorageMutation(draft => {
+            const group = draft.cardGroups.find(item => item.id === groupId && !item.filter?.trim());
+            if (!group) return { changed: false, result: 0 };
+            group.cardIds ??= [];
+            let added = 0;
+            for (const id of ids) {
+                const card = draft.cards[id];
+                if (!card || group.cardIds.includes(id)) continue;
+                group.cardIds.push(id);
+                card.groupIds ??= [];
+                if (!card.groupIds.includes(groupId)) card.groupIds.push(groupId);
+                added++;
+            }
+            return { changed: added > 0, result: added };
+        });
+    }
+
+    public resetCardProgress(cardId: string): Promise<boolean> {
+        return this.runStorageMutation(draft => {
+            const card = draft.cards[cardId];
+            if (!card) return { changed: false, result: false };
+            const reset = this.fsrsService.initializeCard(card.text, card.answer, card.filePath);
+            draft.cards[cardId] = {
+                ...reset,
+                id: card.id,
+                createdAt: card.createdAt,
+                updatedAt: Date.now(),
+                groupIds: card.groupIds ? [...card.groupIds] : undefined,
+                sourceId: card.sourceId,
+                sourceType: card.sourceType,
+                suspended: false
+            };
+            return { changed: true, result: true };
+        });
     }
 
     /**

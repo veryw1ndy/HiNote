@@ -142,12 +142,10 @@ export class FlashcardOperations {
         const buttons = this.component.getContainer().querySelectorAll<HTMLButtonElement>(".flashcard-rating-button");
         buttons.forEach(button => button.disabled = true);
         try {
-            const session = this.component.getStudySession?.();
             const saved = await this.component.getFsrsManager().trackStudyProgress(
                 card.id,
                 rating,
                 groupId,
-                session?.allowEarlyReview,
                 studyTimeMs
             );
             if (!saved) {
@@ -183,24 +181,18 @@ export class FlashcardOperations {
             groupId = manager.getCardGroups()[0]?.id || "";
             this.component.setCurrentGroupId(groupId);
         }
-        const session = this.component.getStudySession?.();
-        const cards = session
-            ? session.cardIds
-                .map(id => manager.getAllCards().find(card => card.id === id))
-                .filter((card): card is NonNullable<typeof card> => Boolean(card && !card.suspended && !this.completedCardIds.has(card.id)))
-            : groupId ? manager.getCardsForStudy(groupId) : [];
+        const cards = groupId ? manager.getCardsForStudy(groupId) : [];
         const today = new Date().toDateString();
-        const sessionKey = session?.id ?? groupId;
-        if (this.sessionGroup !== sessionKey || this.sessionDay !== today) {
+        if (this.sessionGroup !== groupId || this.sessionDay !== today) {
             this.completed = 0;
             this.lastRatedCardId = undefined;
             this.completedCardIds.clear();
-            this.sessionGroup = sessionKey;
+            this.sessionGroup = groupId;
             this.sessionDay = today;
             this.revision++;
         }
         this.component.setCards(cards);
-        const position = restoreReviewPosition(cards, restore && !session ? this.component.getGroupProgress() : null);
+        const position = restoreReviewPosition(cards, restore ? this.component.getGroupProgress() : null);
         this.component.setCurrentIndex(Math.max(0, position.currentIndex));
         this.component.setCardFlipped(cards.length > 0 && position.isFlipped);
         this.syncCurrentCardTimer();
@@ -209,7 +201,7 @@ export class FlashcardOperations {
         this.component.saveState();
 
         // Only one timer per visible component, using its own popout window.
-        if (groupId && this.component.getIsActive() && !session) {
+        if (groupId && this.component.getIsActive()) {
             const now = Date.now();
             const next = manager.getCardsByGroupId(groupId)
                 .filter(card => !card.suspended && card.nextReview > now)

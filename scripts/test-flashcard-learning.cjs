@@ -75,7 +75,7 @@ async function main() {
 
     storage.cards = { a: { ...original, id: 'a' }, b: { ...original, id: 'b', filePath: 'new.md' } };
     storage.cardGroups = [{ id: 'g', name: 'G', filter: 'old', cardIds: ['a'] }];
-    const repo = new CardGroupRepository({ storage, saveStorage: async () => {}, saveStorageDebounced: () => {}, emitFlashcardChanged: () => {} });
+    const repo = new CardGroupRepository({ storage, saveStorageDebounced: () => {}, emitFlashcardChanged: () => {} });
     const groups = new FlashcardGroupService({ getStorage: () => storage, getGroupRepository: () => repo, saveStorage: async () => {}, saveDebounced: () => {} });
     await groups.updateCardGroup('g', { filter: 'new' });
     storage.cards.c = { ...original, id: 'c', filePath: 'new.md' };
@@ -266,6 +266,13 @@ async function transactions(original) {
     await manager.undoLastReview();
     assert.equal(disk.cards[original.id].reviews, 0);
     assert.equal(disk.cards[original.id].answer, 'Answer edited during save', 'Undo must preserve source edits');
+    beforeWrite = async () => { throw Error('disk full'); };
+    await assert.rejects(manager.updateCard(original.id, { answer: 'Must not leak' }, ['group']), /disk full/);
+    assert.equal(manager.getAllCards()[0].answer, 'Answer edited during save', 'Failed card edits remain invisible');
+    assert.equal(disk.cards[original.id].answer, 'Answer edited during save', 'Failed card edits never reach disk');
+    beforeWrite = async () => {};
+    assert.equal(await manager.updateCard(original.id, { answer: 'Durable edit' }, ['group']), true);
+    assert.equal(disk.cards[original.id].answer, 'Durable edit', 'Successful card edits commit to disk');
     const schedule = disk.cards[original.id].nextReview;
     await manager.setCardSuspended(original.id, true);
     assert.equal(manager.getCardsForStudy('hinote:all').length, 0);

@@ -15,7 +15,15 @@ type SanitizedComment = Partial<CommentItem> & {
  */
 export class DataValidator {
     private static isRecord(value: unknown): value is JsonRecord {
-        return typeof value === 'object' && value !== null;
+        return typeof value === 'object' && value !== null && !Array.isArray(value);
+    }
+
+    private static isFiniteNumber(value: unknown): value is number {
+        return typeof value === 'number' && Number.isFinite(value);
+    }
+
+    private static isStringArray(value: unknown): value is string[] {
+        return Array.isArray(value) && value.every(item => typeof item === 'string');
     }
 
     /**
@@ -187,22 +195,101 @@ export class DataValidator {
             errors.push('缺少有效的版本信息');
         }
 
-        // 验证cards对象
-        if (data.cards && typeof data.cards !== 'object') {
-            errors.push('cards必须是对象');
+        if (!this.isRecord(data.cards)) {
+            errors.push('缺少有效的cards对象');
+        } else {
+            for (const [id, card] of Object.entries(data.cards)) {
+                errors.push(...this.validateFlashcard(id, card));
+            }
         }
 
-        // 验证globalStats
-        if (data.globalStats && typeof data.globalStats !== 'object') {
-            errors.push('globalStats必须是对象');
+        if (!this.isRecord(data.globalStats)) {
+            errors.push('缺少有效的globalStats对象');
+        } else {
+            for (const field of ['totalReviews', 'averageRetention', 'streakDays', 'lastReviewDate']) {
+                if (!this.isFiniteNumber(data.globalStats[field])) errors.push(`globalStats.${field}必须是有限数字`);
+            }
         }
 
-        // 验证cardGroups
-        if (data.cardGroups && !Array.isArray(data.cardGroups)) {
-            errors.push('cardGroups必须是数组');
+        if (!Array.isArray(data.cardGroups)) {
+            errors.push('缺少有效的cardGroups数组');
+        } else {
+            data.cardGroups.forEach((group, index) => errors.push(...this.validateCardGroup(group, index)));
         }
+
+        if (!this.isRecord(data.uiState)) errors.push('缺少有效的uiState对象');
+
+        if (!Array.isArray(data.dailyStats)) {
+            errors.push('缺少有效的dailyStats数组');
+        } else {
+            data.dailyStats.forEach((stats, index) => {
+                if (!this.isRecord(stats)) {
+                    errors.push(`dailyStats[${index}]必须是对象`);
+                    return;
+                }
+                for (const field of ['date', 'newCardsLearned', 'cardsReviewed', 'reviewCount', 'newCount', 'againCount', 'hardCount', 'goodCount', 'easyCount']) {
+                    if (!this.isFiniteNumber(stats[field])) errors.push(`dailyStats[${index}].${field}必须是有限数字`);
+                }
+            });
+        }
+
+        if (data.parameters !== undefined) errors.push(...this.validateFlashcardParameters(data.parameters));
 
         return { valid: errors.length === 0, errors };
+    }
+
+    private static validateFlashcard(id: string, card: unknown): string[] {
+        const errors: string[] = [];
+        const path = `cards.${id}`;
+        if (!this.isRecord(card)) return [`${path}必须是对象`];
+        if (card.id !== id) errors.push(`${path}.id必须与存储键一致`);
+        for (const field of ['text', 'answer']) {
+            if (typeof card[field] !== 'string') errors.push(`${path}.${field}必须是字符串`);
+        }
+        for (const field of ['difficulty', 'stability', 'retrievability', 'lastReview', 'nextReview', 'createdAt', 'reviews', 'lapses']) {
+            if (!this.isFiniteNumber(card[field])) errors.push(`${path}.${field}必须是有限数字`);
+        }
+        if (!Array.isArray(card.reviewHistory)) {
+            errors.push(`${path}.reviewHistory必须是数组`);
+        } else {
+            card.reviewHistory.forEach((review, index) => {
+                if (!this.isRecord(review)
+                    || !this.isFiniteNumber(review.timestamp)
+                    || !this.isFiniteNumber(review.elapsed)
+                    || !this.isFiniteNumber(review.rating)
+                    || review.rating < 1 || review.rating > 4) {
+                    errors.push(`${path}.reviewHistory[${index}]不是有效的复习记录`);
+                }
+            });
+        }
+        if (card.groupIds !== undefined && !this.isStringArray(card.groupIds)) errors.push(`${path}.groupIds必须是字符串数组`);
+        if (card.suspended !== undefined && typeof card.suspended !== 'boolean') errors.push(`${path}.suspended必须是布尔值`);
+        if (card.sourceType !== undefined && card.sourceType !== 'highlight' && card.sourceType !== 'comment') errors.push(`${path}.sourceType无效`);
+        return errors;
+    }
+
+    private static validateCardGroup(group: unknown, index: number): string[] {
+        const errors: string[] = [];
+        const path = `cardGroups[${index}]`;
+        if (!this.isRecord(group)) return [`${path}必须是对象`];
+        for (const field of ['id', 'name', 'filter']) {
+            if (typeof group[field] !== 'string') errors.push(`${path}.${field}必须是字符串`);
+        }
+        for (const field of ['createdTime', 'sortOrder']) {
+            if (!this.isFiniteNumber(group[field])) errors.push(`${path}.${field}必须是有限数字`);
+        }
+        if (group.cardIds !== undefined && !this.isStringArray(group.cardIds)) errors.push(`${path}.cardIds必须是字符串数组`);
+        return errors;
+    }
+
+    private static validateFlashcardParameters(parameters: unknown): string[] {
+        if (!this.isRecord(parameters)) return ['parameters必须是对象'];
+        const errors: string[] = [];
+        for (const field of ['request_retention', 'maximum_interval', 'newCardsPerDay', 'reviewsPerDay']) {
+            if (!this.isFiniteNumber(parameters[field])) errors.push(`parameters.${field}必须是有限数字`);
+        }
+        if (!Array.isArray(parameters.w) || !parameters.w.every(value => this.isFiniteNumber(value))) errors.push('parameters.w必须是有限数字数组');
+        return errors;
     }
 
     /**

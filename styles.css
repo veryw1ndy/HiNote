@@ -1198,70 +1198,6 @@ settings:
 
 /* 已删除热力图缩放相关样式 */
 
-/* 统计信息容器水平布局 */
-.flashcard-stats-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-around;
-    align-items: center;
-    gap: 4px;
-    flex-wrap: wrap;
-}
-
-/* 自定义分组标题区域 */
-.flashcard-groups-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%; /* 从flashcard-groups-actions合并过来 */
-}
-
-.flashcard-groups-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-normal);
-}
-
-
-/* 分组操作按钮 - 已合并 */
-.flashcard-group-action {
-    cursor: pointer;
-    padding: 4px; /* 使用第一个样式的padding */
-    border-radius: 4px;
-    color: var(--text-muted);
-    transition: all 0.2s ease;
-}
-
-.flashcard-group-action:hover {
-    color: var(--text-normal);
-    background-color: var(--background-modifier-hover);
-}
-
-/* 添加分组按钮样式 */
-.flashcard-add-group {
-    width: 100%;
-    padding: 6px 8px;
-    background-color: var(--background-secondary);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-}
-
-.flashcard-add-group:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-.flashcard-add-group svg {
-    width: 16px;
-    height: 16px;
-    color: var(--text-muted);
-}
-
-
 .flashcard-stat-label .flashcard-stat-value{
     font-size: 12px;
     color: var(--text-faint);
@@ -1381,13 +1317,6 @@ settings:
     gap: 12px;
 }
 
-.flashcard-sidebar {
-    width: 240px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
 /* 正则规则添加按钮样式 */
 .regex-rule-add {
     padding: 6px;
@@ -1414,182 +1343,6 @@ settings:
 
 .regex-rule-add-text:hover {
     color: var(--text-accent);
-}
-
-.flashcard-default-groups,
-.flashcard-groups {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.flashcard-group-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-/* 自定义分组卡片样式 */
-.flashcard-groups .flashcard-group-item {
-    display: flex;
-    flex-direction: column;
-    padding: 12px;
-    margin: 4px 0;
-    background: var(--background-secondary);
-    border-radius: 6px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    align-items: stretch;
-    border: 1px solid var(--background-modifier-border);
-}
-
-.flashcard-groups .flashcard-group-item:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.flashcard-groups .flashcard-group-item.active {
-    border: 1px solid var(--interactive-accent);
-}
-
-/* 分组标题和操作按钮行 */
-.flashcard-groups .flashcard-group-item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
-.flashcard-groups .flashcard-group-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 16px;
-    font-weight: 500;
-}
-
-.flashcard-groups .flashcard-group-icon svg {
-    width: 16px;
-    height: 16px;
-}
-
-.flashcard-groups .flashcard-group-actions {
-    display: flex;
-    gap: 8px;
-}
-
-/* 统计数据行 */
-.flashcard-groups .flashcard-group-stats {
-    display: flex;
-    justify-content: space-around;
-    padding: 8px;
-    background: var(--background-secondary);
-    border-radius: 4px;
-    margin-top: auto;
-}
-
-.flashcard-groups .flashcard-group-stat {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    color: var(--text-muted);
-}
-
-.flashcard-groups .flashcard-stat-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.flashcard-groups .flashcard-stat-icon svg {
-    width: 16px;
-    height: 16px;
-}
-
-.flashcard-group-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 6px 8px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.flashcard-group-item-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-}
-
-.flashcard-group-item-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.flashcard-group-icon {
-    width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-muted);
-}
-
-.flashcard-group-item.active .flashcard-group-icon {
-    color: var(--text-accent);
-}
-
-.flashcard-group-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1;
-    min-width: 0; /* 允许子元素缩小到比其内容更小 */
-    overflow: hidden;
-}
-
-.flashcard-group-name {
-    font-size: 0.9em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex: 1;
-    min-width: 0; /* 允许文本缩小到比其内容更小 */
-}
-
-.flashcard-group-actions {
-    display: flex;
-    gap: 4px;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    flex-shrink: 0; /* 防止操作按钮被挤压 */
-    margin-left: 8px; /* 与分组名称保持一定距离 */
-}
-
-.flashcard-group-item:hover .flashcard-group-actions {
-    opacity: 1;
-}
-
-.flashcard-group-item:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-.flashcard-group-item.active {
-    background-color: var(--background-modifier-hover);
-    font-weight: 600;
-    color: var(--text-accent);
-}
-
-.flashcard-group-count {
-    font-size: 11px;
-    color: var(--text-faint);
-    background: var(--background-secondary);
-    padding: 2px 8px;
-    border-radius: 10px;
 }
 
 .flashcard-content-area {
@@ -4016,28 +3769,9 @@ textarea.flashcard-modal-input {
     flex-direction: column;
 }
 
-/* 移动端闪卡侧边栏 */
-.is-mobile.is-small-screen .flashcard-sidebar {
-    width: 100%;
-    margin-bottom: 10px;
-}
-
 /* 移动端闪卡内容区域 */
 .is-mobile.is-small-screen .flashcard-content-area {
     width: 100%;
-}
-
-/* 移动端显示侧边栏时隐藏内容区域 */
-.is-mobile.is-small-screen.show-sidebar .flashcard-sidebar {
-    display: flex;
-}
-
-.is-mobile.is-small-screen.show-sidebar .flashcard-content-area {
-    display: none;
-}
-
-.is-mobile.is-small-screen.show-sidebar .flashcard-progress-container {
-    display: none;
 }
 
 .flashcard-suspend,
@@ -4054,26 +3788,8 @@ textarea.flashcard-modal-input {
     gap: var(--size-4-2);
 }
 
-.flashcard-back-to-groups {
-    display: none;
-}
-
-.is-small-screen.show-content .flashcard-back-to-groups {
-    display: inline-flex;
-    align-self: flex-start;
-}
-
 .is-small-screen .flashcard-content-area {
     flex-direction: column;
-}
-
-/* 移动端显示内容区域时隐藏侧边栏 */
-.is-mobile.is-small-screen.show-content .flashcard-sidebar {
-    display: none;
-}
-
-.is-mobile.is-small-screen.show-content .flashcard-content-area {
-    display: flex;
 }
 
 /* === AI Check 按钮状态图标样式 === */
@@ -4788,17 +4504,11 @@ button.hicard-primary-action {
 .hicard-snapshot-value { font-weight: var(--font-semibold); line-height: 1.2; }
 .hicard-snapshot-label { margin-top: 2px; overflow: hidden; color: var(--text-muted); font-size: var(--font-smallest); text-overflow: ellipsis; white-space: nowrap; }
 
-.hicard-today-columns {
-    display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(280px, .75fr);
-    gap: 14px;
-}
-.hicard-today-columns > .hicard-surface { padding: 16px; }
+.hicard-today-page > .hicard-surface { padding: 16px; }
 .hicard-section-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .hicard-section-heading h3 { margin: 0; font-size: 1rem; }
 .hicard-continue-list { display: grid; }
-button.hicard-continue-row,
-button.hicard-quick-action {
+button.hicard-continue-row {
     display: flex;
     align-items: center;
     width: 100%;
@@ -4813,8 +4523,7 @@ button.hicard-quick-action {
     background: transparent;
     text-align: left;
 }
-button.hicard-continue-row:hover,
-button.hicard-quick-action:hover { background: var(--background-modifier-hover); }
+button.hicard-continue-row:hover { background: var(--background-modifier-hover); }
 .hicard-list-icon {
     display: inline-flex;
     align-items: center;
@@ -5235,7 +4944,6 @@ button.hicard-quick-action:hover { background: var(--background-modifier-hover);
 .hicard-form-field textarea,
 .hicard-form-field input,
 .hicard-form-field select { width: 100%; }
-.hicard-study-plan-form,
 .hicard-card-editor { display: grid; gap: 16px; }
 .hicard-editor-modal .modal { width: min(640px, calc(100vw - 32px)); }
 .hicard-editor-modal .modal-content { padding-top: 4px; }
@@ -5281,13 +4989,6 @@ button.hicard-quick-action:hover { background: var(--background-modifier-hover);
     color: var(--text-faint);
     background: var(--background-secondary);
     text-align: center;
-}
-.hicard-modal-intro { margin-top: 0; color: var(--text-muted); }
-.hicard-study-plan-preview {
-    padding: 10px 12px;
-    border-radius: 8px;
-    color: var(--text-muted);
-    background: var(--background-secondary);
 }
 .hicard-card-editor-groups { display: grid; gap: 7px; }
 .hicard-check-row { display: flex; align-items: center; gap: 8px; }
@@ -5424,8 +5125,7 @@ button.hicard-quick-action:hover { background: var(--background-modifier-hover);
     max-width: 760px;
 }
 .hicard-settings-page .flashcard-settings-container > .setting-item:not(.setting-item-heading),
-.hicard-settings-page .fsrs-params-container,
-.hicard-settings-page .hicard-settings-data {
+.hicard-settings-page .fsrs-params-container {
     border-radius: var(--radius-m);
 }
 .hicard-settings-page .flashcard-settings-container > .setting-item:not(.setting-item-heading) {
@@ -5444,16 +5144,6 @@ button.hicard-quick-action:hover { background: var(--background-modifier-hover);
 .hicard-settings-page .flashcard-activation-button {
     border-radius: var(--radius-s);
 }
-.hicard-settings-data {
-    max-width: 760px;
-    padding: 18px;
-    margin-top: 20px;
-}
-.hicard-settings-data h3 { margin: 0 0 5px; }
-.hicard-settings-data p { margin: 0; color: var(--text-muted); }
-.hicard-settings-data-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-.hicard-settings-data-actions button { display: inline-flex; align-items: center; gap: 7px; }
-
 @media (max-width: 800px) {
     .hicard-workspace-body {
         grid-template-columns: 52px minmax(0, 1fr);
@@ -5475,7 +5165,6 @@ button.hicard-quick-action:hover { background: var(--background-modifier-hover);
     .hicard-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .hicard-group-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .hicard-today-insights { grid-template-columns: 1fr; }
-    .hicard-today-columns { grid-template-columns: 1fr; }
     .hicard-management-row {
         grid-template-columns: minmax(150px, 2fr) 80px 80px 100px;
     }

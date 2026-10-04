@@ -88,7 +88,7 @@ export class HiCardEditorModal extends Modal {
 
         const checks = this.renderGroups(form);
         this.renderActions(async () => {
-            this.saveGroups(checks);
+            await this.plugin.fsrsManager.updateCard(this.card.id, {}, this.selectedGroupIds(checks));
             this.finish(t('Card updated'));
         }, t('Done'));
     }
@@ -102,8 +102,11 @@ export class HiCardEditorModal extends Modal {
             const text = question.value.trim();
             const response = answer.value.trim();
             if (!text || !response) throw new Error(t('Question and answer are required.'));
-            this.plugin.fsrsManager.updateCard(this.card.id, { text, answer: response });
-            this.saveGroups(checks);
+            await this.plugin.fsrsManager.updateCard(
+                this.card.id,
+                { text, answer: response },
+                this.selectedGroupIds(checks)
+            );
             this.finish(t('Card updated'));
         });
     }
@@ -194,7 +197,7 @@ export class HiCardEditorModal extends Modal {
         const groups = container.createDiv({ cls: 'hicard-card-editor-groups' });
         groups.createDiv({ cls: 'hicard-form-label', text: t('Study groups') });
         const checks = new Map<string, HTMLInputElement>();
-        for (const group of this.plugin.fsrsManager.getCardGroups().filter(group => !isSystemCardGroup(group.id))) {
+        for (const group of this.plugin.fsrsManager.getCardGroups().filter(group => !isSystemCardGroup(group.id) && !group.filter?.trim())) {
             const label = groups.createEl('label', { cls: 'hicard-check-row' });
             const check = label.createEl('input', { attr: { type: 'checkbox' } });
             check.checked = Boolean(this.card.groupIds?.includes(group.id));
@@ -223,11 +226,8 @@ export class HiCardEditorModal extends Modal {
         });
     }
 
-    private saveGroups(checks: Map<string, HTMLInputElement>): void {
-        for (const [groupId, check] of checks) {
-            if (check.checked) this.plugin.fsrsManager.addCardToGroup(this.card.id, groupId);
-            else this.plugin.fsrsManager.removeCardFromGroup(this.card.id, groupId);
-        }
+    private selectedGroupIds(checks: Map<string, HTMLInputElement>): string[] {
+        return Array.from(checks).filter(([, check]) => check.checked).map(([groupId]) => groupId);
     }
 
     private finish(message: string): void {
@@ -264,7 +264,7 @@ export class HiCardEditorModal extends Modal {
             message: t('Make this card new again? Its review history will be cleared.')
         });
         if (!confirmed) return;
-        this.plugin.fsrsManager.resetCardProgress(this.card.id);
+        await this.plugin.fsrsManager.resetCardProgress(this.card.id);
         this.finish(t('Card progress reset'));
     }
 }
