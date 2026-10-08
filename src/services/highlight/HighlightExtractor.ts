@@ -20,9 +20,11 @@ export class HighlightExtractor {
     private static readonly CONTEXT_LENGTH = 80;
 
     // 默认的文本提取正则（可以被用户自定义替换）
-    // 使用更严格的模式：==后面和前面不能是=或换行符，避免匹配URL中的==
+    // ==...== 之间不能是 = 或换行，避免匹配 URL 里的 ==。
+    // 旧的写法要求内容至少两个字符，所以 ==a== 或 ==❌== 这种单字符高亮
+    // 从来不会被记录；现在一个字符也可以，中间的单个 = 也能保留。
     private static readonly DEFAULT_HIGHLIGHT_PATTERN = 
-        /==([^=\n](?:[^=\n]|=[^=\n])*?[^=\n])==|<mark[^>]*>([\s\S]*?)<\/mark>|<span[^>]*>([\s\S]*?)<\/span>/g;
+        /==(?!=)((?:[^=\n]|=(?!=))+?)(?<!=)==|<mark[^>]*>([\s\S]*?)<\/mark>|<span[^>]*>([\s\S]*?)<\/span>/g;
 
     private blockIdService: BlockIdService;
     // 文件内容缓存
