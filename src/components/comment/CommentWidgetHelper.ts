@@ -55,7 +55,9 @@ export class CommentWidgetHelper {
         });
 
         // 渲染评论内容
-        this.renderTooltipContent(app, commentsList, tooltip, highlight.comments || []);
+        this.renderTooltipContent(
+            app, commentsList, tooltip, highlight.comments || [], highlight.filePath || ''
+        );
 
         activeDocument.body.appendChild(tooltip);
         
@@ -69,7 +71,8 @@ export class CommentWidgetHelper {
         app: App,
         commentsList: HTMLElement, 
         tooltip: HTMLElement, 
-        comments: CommentItem[]
+        comments: CommentItem[],
+        sourcePath = ''
     ): void {
         if (comments.length === 0) return;
 
@@ -82,7 +85,7 @@ export class CommentWidgetHelper {
                 cls: 'hi-note-tooltip-content markdown-rendered' 
             });
             
-            this.renderMarkdownContent(app, contentEl, comment.content);
+            this.renderMarkdownContent(app, contentEl, comment.content, sourcePath);
 
             item.createEl('div', {
                 cls: 'hi-note-tooltip-time',
@@ -102,13 +105,22 @@ export class CommentWidgetHelper {
     /**
      * 渲染 Markdown 内容
      */
-    private static renderMarkdownContent(app: App, containerEl: HTMLElement, content: string): void {
+    private static renderMarkdownContent(
+        app: App,
+        containerEl: HTMLElement,
+        content: string,
+        sourcePath = ''
+    ): void {
+        // The component has to be loaded, and the render wants a source path:
+        // without either, render rejects and the tooltip falls back to plain
+        // text - which is why comments showed their Markdown raw on hover.
         const markdownComponent = new Component();
+        markdownComponent.load();
         MarkdownRenderer.render(
             app,
             content,
             containerEl,
-            '',
+            sourcePath,
             markdownComponent
         ).then(() => {
             containerEl.querySelectorAll('ul, ol').forEach(list => {
