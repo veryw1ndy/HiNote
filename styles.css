@@ -822,7 +822,10 @@ settings:
 /* 鼠标悬停时显示按钮 */
 .cm-line:hover .hi-note-button-hidden,
 .cm-highlight:hover + .hi-note-widget .hi-note-button-hidden,
-.hi-note-widget:hover .hi-note-button-hidden {
+.hi-note-widget:hover .hi-note-button-hidden,
+/* 阅读模式没有 .cm-line：悬停高亮本身时显示按钮 */
+mark:hover .hi-note-preview-widget .hi-note-button-hidden,
+.markdown-preview-view mark:hover .hi-note-button-hidden {
     opacity: 1;
     visibility: visible;
     width: auto;

@@ -38,9 +38,10 @@ export class PreviewHighlightResolver {
         file: TFile,
         content: string
     ): PreviewHighlight[] {
+        // 不再过滤掉"还没有评论"的高亮：阅读模式下也要能对它们添加批注，
+        // 否则悬停时根本没有图标可点。
         return rawHighlights
             .map(highlight => this.enrichHighlight(highlight, file))
-            .filter(highlight => !!highlight.comments?.length)
             .map(highlight => ({
                 ...highlight,
                 line: this.getLineForPosition(content, highlight.position)

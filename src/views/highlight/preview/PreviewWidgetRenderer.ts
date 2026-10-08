@@ -81,6 +81,11 @@ export class PreviewWidgetRenderer {
         const button = CommentWidgetHelper.createButton(widget, hasComments);
         const iconContainer = button.querySelector('.hi-note-icon-container') as HTMLElement;
         
+        const openPanel = () =>
+            CommentWidgetHelper.openCommentPanel(
+                this.plugin.app, highlight, this.plugin.eventManager
+            );
+
         if (hasComments && highlight.comments) {
             // 添加评论数量
             CommentWidgetHelper.addCommentCount(iconContainer, highlight.comments.length);
@@ -92,12 +97,19 @@ export class PreviewWidgetRenderer {
             CommentWidgetHelper.setupTooltipEvents(button, widget, tooltip);
             
             // 设置点击事件
-            CommentWidgetHelper.setupClickEvent(button, tooltip, () => 
-                CommentWidgetHelper.openCommentPanel(this.plugin.app, highlight, this.plugin.eventManager)
-            );
+            CommentWidgetHelper.setupClickEvent(button, tooltip, openPanel);
             
             // 创建清理观察器
             CommentWidgetHelper.createCleanupObserver(widget, tooltip);
+        } else {
+            // 阅读模式下，没有评论的高亮也要能加批注：
+            // 悬停时显示图标，点击打开批注面板。
+            CommentWidgetHelper.setupEmptyCommentHover(widget, button);
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                void openPanel();
+            });
         }
     }
 }
