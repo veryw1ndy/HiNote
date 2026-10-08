@@ -23,6 +23,8 @@ export class CommentInput {
     private inlineAI: InlineAICommentHandler;
     private saveController: CommentInputSaveController;
     private boundHandleOutsideClick: (e: MouseEvent) => void;
+    private boundHandlePressStart: (e: MouseEvent) => void;
+    private pressStartedInside = false;
     private commentEl: Element | null = null; // 保存批注元素引用，用于移除 editing 类
     private isOpen = false;
 
@@ -40,6 +42,7 @@ export class CommentInput {
         }
     ) {
         this.boundHandleOutsideClick = this.handleOutsideClick.bind(this);
+        this.boundHandlePressStart = this.handlePressStart.bind(this);
         this.inlineAI = new InlineAICommentHandler({
             plugin: this.plugin,
             highlight: this.highlight,
@@ -63,6 +66,7 @@ export class CommentInput {
         if (didShow) {
             this.isOpen = true;
             activeDocument.addEventListener('click', this.boundHandleOutsideClick);
+            activeDocument.addEventListener('mousedown', this.boundHandlePressStart, true);
             this.options.onShown?.();
         }
     }
@@ -127,8 +131,28 @@ export class CommentInput {
     }
 
 
+    /**
+     * Records whether the gesture started inside the box. Selecting text by
+     * dragging often releases outside it, and that still fires a click whose
+     * target is outside - which used to close the box and lose the selection.
+     */
+    private handlePressStart(e: MouseEvent) {
+        const target = e.target as HTMLElement | null;
+        this.pressStartedInside = !!target && (
+            (!!this.textarea && this.textarea.contains(target)) ||
+            !!target.closest('.hi-note-input, .hi-note-actions-hint')
+        );
+    }
+
     private handleOutsideClick(e: MouseEvent) {
         if (!this.textarea || this.saveController.isProcessing()) return;
+
+        // The press began in the box: this is the end of a drag out of it, so
+        // leave the box open with whatever is selected.
+        if (this.pressStartedInside) {
+            this.pressStartedInside = false;
+            return;
+        }
         
         const clickedElement = e.target as HTMLElement;
         const isOutside = !this.textarea.contains(clickedElement) && 
@@ -162,6 +186,7 @@ export class CommentInput {
         
         // 清理事件监听器
         activeDocument.removeEventListener('click', this.boundHandleOutsideClick);
+        activeDocument.removeEventListener('mousedown', this.boundHandlePressStart, true);
         this.saveController.reset();
         
         // 调用取消回调
@@ -177,6 +202,7 @@ export class CommentInput {
         
         // 清理事件监听器
         activeDocument.removeEventListener('click', this.boundHandleOutsideClick);
+        activeDocument.removeEventListener('mousedown', this.boundHandlePressStart, true);
         this.saveController.reset();
         
         removeCommentInputElements(this.getElements());
@@ -194,6 +220,7 @@ export class CommentInput {
             
             // 清理事件监听器
             activeDocument.removeEventListener('click', this.boundHandleOutsideClick);
+        activeDocument.removeEventListener('mousedown', this.boundHandlePressStart, true);
             this.saveController.reset();
             
             removeCommentInputElements(this.getElements(), true);
@@ -215,6 +242,7 @@ export class CommentInput {
         if (!this.saveController.startProcessing()) return;
 
         activeDocument.removeEventListener('click', this.boundHandleOutsideClick);
+        activeDocument.removeEventListener('mousedown', this.boundHandlePressStart, true);
 
         try {
             await this.options.onDelete?.();
@@ -225,6 +253,7 @@ export class CommentInput {
         } catch (error) {
             console.error('删除评论失败:', error);
             activeDocument.addEventListener('click', this.boundHandleOutsideClick);
+            activeDocument.addEventListener('mousedown', this.boundHandlePressStart, true);
             this.saveController.reset();
         }
     }
