@@ -48,6 +48,35 @@ export class PreviewHighlightResolver {
             }));
     }
 
+    /**
+     * 去掉行内 Markdown 标记后再比对。
+     *
+     * 提取出来的高亮文本是原文（==**粗体**==），而阅读模式下 <mark> 里是
+     * 渲染后的纯文字（粗体），两者直接比对永远不相等 —— 所以凡是带格式的
+     * 高亮在阅读模式下都找不到，只有纯文本的能用。
+     */
+    private plainText(value: string): string {
+        return value
+            .replace(/`([^`]*)`/g, '$1')
+            .replace(/\*\*\*([^*]+)\*\*\*/g, '$1')
+            .replace(/\*\*([^*]+)\*\*/g, '$1')
+            .replace(/\*([^*]+)\*/g, '$1')
+            .replace(/__([^_]+)__/g, '$1')
+            .replace(/_([^_]+)_/g, '$1')
+            .replace(/~~([^~]+)~~/g, '$1')
+            .replace(/==([^=]+)==/g, '$1')
+            .replace(/\[\[([^\]|]+)\|([^\]]*)\]\]/g, '$2')
+            .replace(/\[\[([^\]]+)\]\]/g, '$1')
+            .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    private sameText(highlightText: string, domText: string): boolean {
+        if (highlightText === domText) return true;
+        return this.plainText(highlightText) === this.plainText(domText);
+    }
+
     findMatchingHighlight(
         text: string,
         mark: Element,
@@ -58,11 +87,11 @@ export class PreviewHighlightResolver {
         const sectionInfo = this.getSectionInfo(mark, rootElement, context);
 
         if (!sectionInfo) {
-            return highlightsWithComments.find(highlight => highlight.text === text) || null;
+            return highlightsWithComments.find(highlight => this.sameText(highlight.text, text)) || null;
         }
 
         return highlightsWithComments.find(highlight =>
-            highlight.text === text &&
+            this.sameText(highlight.text, text) &&
             highlight.line >= sectionInfo.lineStart &&
             highlight.line <= sectionInfo.lineEnd
         ) || null;
