@@ -5,6 +5,8 @@ import { CommentWidgetHelper } from "./CommentWidgetHelper";
 
 export class CommentWidget extends WidgetType {
     private cleanupResizePositioning: (() => void) | null = null;
+    // 这个 widget 自己的提示框。每个 widget 一份，销毁时只能收走自己的那份。
+    private tooltip: HTMLElement | null = null;
     
     /**
      * 构造函数
@@ -85,6 +87,7 @@ export class CommentWidget extends WidgetType {
         }
 
         const tooltip = CommentWidgetHelper.createTooltip(this.plugin.app, this.highlight);
+        this.tooltip = tooltip;
 
         if (hasComments) {
             button.removeClass("hi-note-button-hidden");
@@ -110,7 +113,12 @@ export class CommentWidget extends WidgetType {
             this.cleanupResizePositioning = null;
         }
         
-        CommentWidgetHelper.removeTooltipsForHighlight(this.highlight);
+        // 以前这里按高亮 ID 删除 body 里所有同 ID 的提示框。CodeMirror 重建
+        // widget 时会先建新的、再销毁旧的，于是旧 widget 的 destroy 顺手把刚
+        // 建好的那份也删了 —— 悬停就什么都不出来，而且时灵时不灵，取决于重建
+        // 的时机。现在只删自己那一份。
+        this.tooltip?.remove();
+        this.tooltip = null;
         
         // 移除 DOM 元素
         dom.remove();

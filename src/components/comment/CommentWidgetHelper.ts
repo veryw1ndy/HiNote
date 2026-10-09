@@ -272,17 +272,4 @@ export class CommentWidgetHelper {
         
         return observer;
     }
-
-    /**
-     * 根据高亮 ID 清理工具提示，避免 CSS selector 转义问题
-     */
-    static removeTooltipsForHighlight(highlight: HiNote): void {
-        if (!highlight.id) return;
-
-        activeDocument.querySelectorAll(".hi-note-tooltip").forEach(tooltip => {
-            if (tooltip.getAttribute("data-highlight-id") === highlight.id) {
-                tooltip.remove();
-            }
-        });
-    }
 }
