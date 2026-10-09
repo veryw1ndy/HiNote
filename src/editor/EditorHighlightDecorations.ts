@@ -1,7 +1,7 @@
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate } from "@codemirror/view";
 import type { Range } from "@codemirror/state";
 import { MarkdownView, TFile } from "obsidian";
-import { CommentWidget, CommentWidgetHelper } from "../components/comment";
+import { CommentWidget, CommentWidgetHelper, COMMENT_THREAD_CLASS, hasCommentThread } from "../components/comment";
 import { HighlightRepository } from "../repositories/HighlightRepository";
 import { HighlightService } from "../services/HighlightService";
 import { HighlightCommentResolver } from "../services/highlight";
@@ -52,14 +52,27 @@ export function createEditorHighlightDecorations(options: EditorHighlightDecorat
                     }
                 });
 
-                const highlightEndPos = highlight.position + (highlight.originalLength ?? highlight.text.length + 4);
+                const docLength = view.state.doc.length;
+                const highlightEndPos = Math.min(
+                    highlight.position + (highlight.originalLength ?? highlight.text.length + 4),
+                    docLength
+                );
+
+                // 有批注的高亮换个颜色。标记必须有长度，零长度 CM6 会报错。
+                if (hasCommentThread(commentHighlight) && highlightEndPos > highlight.position) {
+                    decorations.push(
+                        Decoration.mark({ class: COMMENT_THREAD_CLASS })
+                            .range(highlight.position, highlightEndPos)
+                    );
+                }
 
                 if (shouldShowCommentWidget(plugin)) {
                     decorations.push(createCommentWidget(plugin, commentHighlight).range(highlightEndPos));
                 }
             }
 
-            return Decoration.set(decorations.sort((a, b) => a.from - b.from));
+            // 让 CM6 自己排：同一个位置上标记和小部件的先后它比我们清楚。
+            return Decoration.set(decorations, true);
         }
     }, {
         decorations: value => value.decorations

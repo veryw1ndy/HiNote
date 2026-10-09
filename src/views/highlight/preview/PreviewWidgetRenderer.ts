@@ -2,7 +2,7 @@ import { TFile, MarkdownPostProcessorContext } from "obsidian";
 import { HighlightInfo as HiNote } from "../../../types/highlight";
 import { HighlightRepository } from "../../../repositories/HighlightRepository";
 import { HighlightService } from '../../../services/HighlightService';
-import { CommentWidgetHelper } from '../../../components/comment';
+import { CommentWidgetHelper, COMMENT_THREAD_CLASS, hasCommentThread } from '../../../components/comment';
 import { PreviewHighlightResolver } from "./PreviewHighlightResolver";
 import type { HiNotePluginContext } from "../../../types/plugin";
 
@@ -74,6 +74,9 @@ export class PreviewWidgetRenderer {
      * 渲染阅读模式下的批注小部件
      */
     private renderPreviewWidget(mark: HTMLElement, highlight: HiNote): void {
+        // 阅读模式下直接拿得到 <mark>，加个 class 就换色了。
+        mark.toggleClass(COMMENT_THREAD_CLASS, hasCommentThread(highlight));
+
         const widget = mark.createSpan({ cls: 'hi-note-widget hi-note-preview-widget' });
         const hasComments = !!(highlight.comments && highlight.comments.length > 0);
         

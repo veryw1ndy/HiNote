@@ -3758,3 +3758,28 @@ textarea.flashcard-modal-input {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+
+/* ── 有批注的高亮 ─────────────────────────────────────────────────────────── */
+/* 写过批注的高亮不走默认黄色，翻一页笔记就能分出哪几处回头还要看。
+   自己挑过颜色的高亮不受影响 - 那本身已经是一种分类了。
+   想换颜色改下面两个变量即可。 */
+
+body {
+    --hi-note-commented-bg: #e0cdf5;
+    --hi-note-commented-edge: #9d74d4;
+}
+
+.theme-dark {
+    --hi-note-commented-bg: #523a6d;
+    --hi-note-commented-edge: #a98ad8;
+}
+
+/* 实时预览下 CM6 把两个标记套在一起，谁在外面不一定，
+   所以内外两层都写上。 */
+.markdown-source-view .cm-line .hi-note-commented,
+.markdown-source-view .cm-line .hi-note-commented .cm-highlight,
+.markdown-rendered mark.hi-note-commented {
+    background-color: var(--hi-note-commented-bg);
+    box-shadow: inset 0 -0.15em 0 var(--hi-note-commented-edge);
+    border-radius: 2px;
+}
