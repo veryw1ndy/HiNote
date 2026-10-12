@@ -13,6 +13,12 @@ import type { HiNotePluginContext } from "../../../types/plugin";
 export class PreviewWidgetRenderer {
     private highlightResolver: PreviewHighlightResolver;
 
+    /**
+     * 每个见过的 <mark> 当时的渲染上下文。批注一变就靠它就地重画，
+     * 不用整页重新渲染。WeakMap：页面重渲染后旧的 <mark> 自己会被回收。
+     */
+    private markContexts = new WeakMap<Element, { root: HTMLElement; context: MarkdownPostProcessorContext }>();
+
     constructor(
         private plugin: HiNotePluginContext,
         private highlightRepository: HighlightRepository,
@@ -33,9 +39,33 @@ export class PreviewWidgetRenderer {
         if (!this.highlightService.shouldProcessFile(file)) return;
 
         // 查找高亮元素
-        const marks = element.querySelectorAll('mark, span.highlight');
+        const marks = Array.from(element.querySelectorAll('mark, span.highlight'));
         if (marks.length === 0) return;
 
+        marks.forEach(mark => this.markContexts.set(mark, { root: element, context }));
+        await this.renderMarks(file, marks, false);
+    }
+
+    /**
+     * 批注改了以后，就地重画这个文件已经渲染出来的高亮。
+     *
+     * post processor 只在渲染时跑一次，之后加的批注不会让它再跑：
+     * 阅读模式要等下次重渲染才变色，实时预览里的表格单元格（也是 post processor 画的）
+     * 要等表格被改动。这里把 containerEl 里属于该文件的 <mark> 重新匹配一遍。
+     */
+    async refresh(file: TFile, containerEl: HTMLElement): Promise<void> {
+        const marks = Array.from(containerEl.querySelectorAll('mark, span.highlight'))
+            .filter(mark => this.markContexts.get(mark)?.context.sourcePath === file.path);
+        if (marks.length === 0) return;
+
+        await this.renderMarks(file, marks, true);
+    }
+
+    /**
+     * reset 为 true 时先清掉旧的小部件再画。清理放在读完数据之后，
+     * 免得重画的那一下批注图标闪一下没了。
+     */
+    private async renderMarks(file: TFile, marks: Element[], reset: boolean): Promise<void> {
         // 获取该文件的所有高亮数据
         const content = await this.plugin.app.vault.cachedRead(file);
         const rawHighlights = this.highlightService.extractHighlights(content, file);
@@ -49,17 +79,24 @@ export class PreviewWidgetRenderer {
 
         // 遍历 DOM 元素进行匹配
         marks.forEach((mark) => {
-            if (mark.hasAttribute('data-hi-note-processed')) return;
-            
-            const text = mark.textContent;
+            const rendered = this.markContexts.get(mark);
+            if (!rendered) return;
+
+            if (reset) {
+                this.clearMark(mark);
+            } else if (mark.hasAttribute('data-hi-note-processed')) {
+                return;
+            }
+
+            const text = this.highlightResolver.markText(mark);
             if (!text) return;
 
             // 查找匹配的高亮
             const match = this.highlightResolver.findMatchingHighlight(
-                text, 
-                mark, 
-                element, 
-                context, 
+                text,
+                mark,
+                rendered.root,
+                rendered.context,
                 highlightsWithComments
             );
 
@@ -68,6 +105,15 @@ export class PreviewWidgetRenderer {
                 this.renderPreviewWidget(mark as HTMLElement, match);
             }
         });
+    }
+
+    /** 拿掉之前画上去的东西。小部件一移除，createCleanupObserver 会顺手把悬停框也删掉。 */
+    private clearMark(mark: Element): void {
+        mark.removeAttribute('data-hi-note-processed');
+        mark.removeClass(COMMENT_THREAD_CLASS);
+        Array.from(mark.children)
+            .filter(child => child.hasClass('hi-note-preview-widget'))
+            .forEach(widget => widget.remove());
     }
 
     /**

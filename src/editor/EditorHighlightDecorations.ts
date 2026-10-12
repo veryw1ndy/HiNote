@@ -1,6 +1,6 @@
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate } from "@codemirror/view";
 import type { Range } from "@codemirror/state";
-import { MarkdownView, TFile } from "obsidian";
+import { editorInfoField, TFile } from "obsidian";
 import { CommentWidget, CommentWidgetHelper, COMMENT_THREAD_CLASS, hasCommentThread } from "../components/comment";
 import { HighlightRepository } from "../repositories/HighlightRepository";
 import { HighlightService } from "../services/HighlightService";
@@ -32,8 +32,9 @@ export function createEditorHighlightDecorations(options: EditorHighlightDecorat
         }
 
         private buildDecorations(view: EditorView): DecorationSet {
-            const activeView = plugin.app.workspace.getActiveViewOfType(MarkdownView);
-            const file = activeView?.file;
+            // 用这个编辑器自己的文件，而不是「当前聚焦的窗格」：焦点在侧栏时后者是 null，
+            // 一滚动笔记就把所有批注图标和颜色清空；分屏时还会拿错文件。
+            const file = view.state.field(editorInfoField, false)?.file;
 
             if (!file || !highlightService.shouldProcessFile(file)) {
                 return Decoration.none;

@@ -22,6 +22,12 @@ const BLOCK_TAGS = new Set([
 ]);
 
 /**
+ * Obsidian 渲染出来的行内公式：MathJax 加载前 span 里是 TeX 原文（没有 $），
+ * 加载后是 mjx-container。两种都和存下来的 $…$ 对不上。
+ */
+const MATH_SELECTOR = '.math, mjx-container';
+
+/**
  * 解析阅读模式下可渲染的高亮数据。
  *
  * Preview renderer 只应该关心 DOM 渲染；这里集中处理存储匹配、评论补全和行号计算。
@@ -57,6 +63,10 @@ export class PreviewHighlightResolver {
      */
     private plainText(value: string): string {
         return value
+            // 公式整段拿掉：屏幕那边 markText() 也跳过了公式，两边才比得上。
+            // 必须放在最前面，不然 TeX 里的 _ 和 * 会被下面当成斜体吃掉。
+            .replace(/\$\$[\s\S]*?\$\$/g, '')
+            .replace(/(?<!\\)\$[^$\n]+?(?<!\\)\$/g, '')
             .replace(/`([^`]*)`/g, '$1')
             .replace(/\*\*\*([^*]+)\*\*\*/g, '$1')
             .replace(/\*\*([^*]+)\*\*/g, '$1')
@@ -74,7 +84,23 @@ export class PreviewHighlightResolver {
 
     private sameText(highlightText: string, domText: string): boolean {
         if (highlightText === domText) return true;
-        return this.plainText(highlightText) === this.plainText(domText);
+
+        // 公式拿掉以后两边的空格不一定对得上（「a $x$ b」剩「a  b」，屏幕上可能是「ab」），
+        // 所以去掉全部空白再比。整条都是公式的高亮会剩空串、跟谁都相等，不算数。
+        const stored = this.plainText(highlightText).replace(/\s+/g, '');
+        return stored !== '' && stored === this.plainText(domText).replace(/\s+/g, '');
+    }
+
+    /**
+     * <mark> 里屏幕上的文字，跳过公式和我们自己加的批注小部件。
+     *
+     * 直接用 textContent 的话，公式那段是 TeX 原文或 MathJax 的内部文字，
+     * 带公式的高亮就永远匹配不上 —— 没有颜色，也没有悬停。
+     */
+    markText(mark: Element): string {
+        const copy = mark.cloneNode(true) as Element;
+        copy.querySelectorAll(`${MATH_SELECTOR}, .hi-note-widget`).forEach(el => el.remove());
+        return copy.textContent ?? '';
     }
 
     findMatchingHighlight(
