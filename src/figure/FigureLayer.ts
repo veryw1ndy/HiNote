@@ -4,6 +4,7 @@ import { figureTexts } from "./figureSvg";
 const SVG_NS = "http://www.w3.org/2000/svg";
 /** 高亮比字框四周多出来一点，看起来才像马克笔划的，而不是贴着字边的框 */
 const PAD = 0.8;
+const CJK = /[\u3000-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uff00-\uffef]/;
 
 export interface FigureSelection {
     from: FigureAnchor['from'];
@@ -131,7 +132,9 @@ export class FigureLayer {
             return all.slice(start, end).trim();
         }).filter(Boolean);
 
-        const text = pieces.join(' ');
+        // 词和词之间补空格；中文一个字一个 <text>，字和字之间不补
+        const text = pieces.reduce((joined, piece) =>
+            joined && !(CJK.test(joined[joined.length - 1]) && CJK.test(piece[0])) ? `${joined} ${piece}` : joined + piece, '');
         if (!text) return null;
 
         return { from: [first.index, fromChar], to: [last.index, toChar], text };
@@ -247,6 +250,13 @@ export class FigureLayer {
                     right: Math.max(a.x + a.width, b.x + b.width),
                     bottom: Math.max(a.y + a.height, b.y + b.height)
                 };
+                // 截图里认出来的词带着自己的框（见 ocr.ts），上下边以它为准
+                const boxY = parseFloat(el.dataset.boxY ?? '');
+                const boxH = parseFloat(el.dataset.boxH ?? '');
+                if (boxY >= 0 && boxH > 0) {
+                    local.y = boxY;
+                    local.bottom = boxY + boxH;
+                }
                 const box = this.toRoot(el, local);
                 if (box) boxes.push(box);
             } catch {

@@ -11,6 +11,7 @@ import { t } from "../i18n";
 import { showConfirmModal } from "../utils/ConfirmModal";
 import { FigureLayer, FigureSelection } from "./FigureLayer";
 import { loadFigureSvg } from "./figureSvg";
+import { OcrReader, RASTER_EXTENSIONS, ocrSvg } from "./ocr";
 
 /** 侧栏点了图里的高亮：LocationService 滚到图那儿，再发这个事件让那一处闪一下 */
 export const FIGURE_FLASH_EVENT = 'hi-note-figure-flash';
@@ -36,6 +37,7 @@ export class FigureHighlighter {
     private toolbar: HTMLElement | null = null;
     private widgets = new Map<FigureLayer, HTMLElement[]>();
     private hoverWidget: { layer: FigureLayer; id: string } | null = null;
+    private ocr: OcrReader;
 
     constructor(
         private plugin: HiNotePluginContext,
@@ -45,6 +47,7 @@ export class FigureHighlighter {
         private highlightService: HighlightService
     ) {
         this.app = plugin.app;
+        this.ocr = new OcrReader(this.app, plugin.manifest.dir);
     }
 
     enable(): void {
@@ -137,7 +140,9 @@ export class FigureHighlighter {
 
             this.pending.add(img);
             try {
-                const svg = await loadFigureSvg(this.app.vault, file);
+                const svg = file.extension.toLowerCase() === 'svg'
+                    ? await loadFigureSvg(this.app.vault, file)
+                    : await this.loadScreenshot(file);
                 if (!svg || !img.isConnected) continue;
                 const layer = new FigureLayer(img, file.path, sourcePath, svg);
                 layer.onDrawn = drawn => this.placeWidgets(layer, drawn);
@@ -152,7 +157,13 @@ export class FigureHighlighter {
         }
     }
 
-    /** <img> 指向库里哪个 .svg 文件 */
+    /** 截图：先认字（第一次要一两秒，之后读缓存），再做成字层 */
+    private async loadScreenshot(file: TFile): Promise<SVGSVGElement | null> {
+        const result = await this.ocr.read(file);
+        return result ? ocrSvg(result) : null;
+    }
+
+    /** <img> 指向库里哪个图片文件：.svg 直接用里面的字，截图要能认字才算 */
     private resolveFigure(img: HTMLImageElement, sourcePath: string): TFile | null {
         let file: TFile | null = null;
 
@@ -175,7 +186,10 @@ export class FigureHighlighter {
             if (link) file = this.app.metadataCache.getFirstLinkpathDest(getLinkpath(link), sourcePath);
         }
 
-        return file && file.extension.toLowerCase() === 'svg' ? file : null;
+        if (!file) return null;
+        const extension = file.extension.toLowerCase();
+        if (extension === 'svg') return file;
+        return RASTER_EXTENSIONS.has(extension) && this.ocr.available ? file : null;
     }
 
     private dropLayer(layer: FigureLayer): void {

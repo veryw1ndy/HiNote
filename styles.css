@@ -3836,6 +3836,15 @@ body {
     fill-opacity: 1;
 }
 
+/* 深色截图（深色模式下截的）：multiply 会把高亮压没，改成提亮 */
+.hi-note-figure-layer.is-dark {
+    mix-blend-mode: screen;
+}
+
+.hi-note-figure-layer.is-dark .hi-note-figure-mark {
+    fill-opacity: 0.45;
+}
+
 /* 侧栏点了这处高亮，在图里闪两下 */
 .hi-note-figure-mark.hi-note-figure-flash {
     animation: hi-note-figure-flash 0.45s ease-in-out 3;
