@@ -192,10 +192,18 @@ export class FigureHighlighter {
         return RASTER_EXTENSIONS.has(extension) && this.ocr.available ? file : null;
     }
 
+    /**
+     * 图离开页面时收掉它的字层，并忘掉这张 <img>。
+     *
+     * 阅读模式只把屏幕附近的段落挂在页面上：段落滚出去时整块拿下来，滚回来时
+     * 挂回去的还是原来那个 <img>。要是还记着「这张图已经有字层了」，滚回来就不会再建，
+     * 图里的字也就选不了 —— 实时预览没这个问题，编辑器每次都画一个新的 <img>。
+     */
     private dropLayer(layer: FigureLayer): void {
         this.clearWidgets(layer);
         layer.destroy();
         this.layers.delete(layer);
+        this.layerOf.delete(layer.img);
     }
 
     // ── 画高亮 ───────────────────────────────────────────────────────────────
