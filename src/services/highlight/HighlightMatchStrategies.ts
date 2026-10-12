@@ -27,7 +27,13 @@ export function findStoredHighlightMatch(
     candidates: HiNote[],
     options: HighlightMatchOptions = {}
 ): HighlightMatchResult | null {
-    const availableCandidates = filterAvailableCandidates(candidates, options.usedIds);
+    // 图里的高亮只认 ID：它的文字也可能在正文里出现，按文字匹配会把正文高亮配到图上去。
+    const sameKind = candidates.filter(candidate => !candidate.figure === !target.figure);
+    const availableCandidates = filterAvailableCandidates(sameKind, options.usedIds);
+    if (target.figure) {
+        const idMatch = findIdMatch(target, availableCandidates);
+        return idMatch ? { highlight: idMatch, confidence: 'id' } : null;
+    }
     if (availableCandidates.length === 0) return null;
 
     const idMatch = findIdMatch(target, availableCandidates);

@@ -1,5 +1,6 @@
 import { App, MarkdownView, Notice, TFile, WorkspaceLeaf } from "obsidian";
 import { HighlightInfo } from "../types/highlight";
+import { FIGURE_FLASH_EVENT } from "../figure/FigureHighlighter";
 
 export class LocationService {
     constructor(private app: App) {}
@@ -13,7 +14,47 @@ export class LocationService {
         if (!targetLeaf) return;
 
         // 2. 定位高亮内容，传递 position 参数
+        if (highlight.figure) {
+            await this.locateFigure(targetLeaf, highlight);
+            return;
+        }
         await this.locateAndHighlightText(targetLeaf, highlight.text, highlight.position);
+    }
+
+    /**
+     * 图里的高亮：正文里没有它的文字，滚到嵌入这张图的那一行，再让图里那一处闪一下。
+     * 不选中文字 —— 实时预览里一选中嵌入链接，图就变回源码了。
+     */
+    private async locateFigure(leaf: WorkspaceLeaf, highlight: HighlightInfo) {
+        await new Promise(resolve => window.setTimeout(resolve, 300));
+
+        const markdownView = leaf.view as MarkdownView;
+        const editor = markdownView.editor;
+        const content = editor.getValue();
+        const name = highlight.figure!.path.split('/').pop() || '';
+
+        let best = -1;
+        for (let at = content.indexOf(name); at !== -1; at = content.indexOf(name, at + 1)) {
+            if (best === -1 || Math.abs(at - highlight.position) < Math.abs(best - highlight.position)) {
+                best = at;
+            }
+        }
+
+        if (best !== -1) {
+            const pos = editor.offsetToPos(best);
+            if (markdownView.getMode() === 'preview') {
+                leaf.setEphemeralState({ line: pos.line, scroll: pos.line });
+            } else {
+                editor.scrollIntoView({ from: pos, to: pos }, true);
+            }
+        }
+
+        // 等图滚进来、渲染好再闪
+        window.setTimeout(() => {
+            markdownView.containerEl.dispatchEvent(
+                new CustomEvent(FIGURE_FLASH_EVENT, { detail: highlight.id })
+            );
+        }, 400);
     }
 
     /**

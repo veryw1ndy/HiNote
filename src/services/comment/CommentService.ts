@@ -170,8 +170,9 @@ export class CommentService {
             // 检查高亮是否关联了闪卡
             const hasFlashcard = highlight.id ? this.checkHasFlashcard(highlight.id) : false;
             
-            // 如果是虚拟高亮或者没有关联闪卡，则删除整个高亮
-            if (highlight.isVirtual || !hasFlashcard) {
+            // 如果是虚拟高亮或者没有关联闪卡，则删除整个高亮。
+            // 图里的高亮除外：正文高亮删了记录 ==…== 还在，图里的删了记录就整个没了。
+            if (highlight.isVirtual || (!hasFlashcard && !highlight.figure)) {
                 // 从 HighlightManager 中删除高亮
                 await this.highlightManager.removeHighlight(file, highlight);
                 removedHighlight = true;

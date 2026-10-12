@@ -179,7 +179,7 @@ export class HighlightManager {
                 let fileHasOrphans = false;
 
                 for (const highlight of highlights) {
-                    if (highlight.isVirtual) continue;
+                    if (highlight.isVirtual || highlight.figure) continue;
 
                     if (!extractedTexts.has(highlight.text)) {
                         orphanedHighlights++;
@@ -224,7 +224,7 @@ export class HighlightManager {
                 const extractedTexts = new Set(extractedHighlights.map(h => h.text));
 
                 const validHighlights = highlights.filter(highlight => {
-                    if (highlight.isVirtual) return true;
+                    if (highlight.isVirtual || highlight.figure) return true;
                     return extractedTexts.has(highlight.text);
                 });
 

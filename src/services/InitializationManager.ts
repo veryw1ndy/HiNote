@@ -8,6 +8,7 @@ import { HighlightManager } from './HighlightManager';
 import { HighlightRepository } from '../repositories/HighlightRepository';
 import type CommentPlugin from '../../main';
 import type { PluginServices } from '../plugin/PluginServices';
+import { FigureHighlighter } from '../figure/FigureHighlighter';
 
 /**
  * 初始化管理器
@@ -18,6 +19,7 @@ export class InitializationManager {
     private isInitialized: boolean = false;
     private initializationPromise: Promise<PluginServices> | null = null;
     private services: PluginServices | null = null;
+    private figureHighlighter: FigureHighlighter | null = null;
 
     constructor(private plugin: CommentPlugin) {}
 
@@ -87,6 +89,13 @@ export class InitializationManager {
         const highlightDecorator = new HighlightDecorator(this.plugin, highlightRepository, highlightService, eventManager);
         highlightDecorator.enable();
 
+        // 图里的字也能划
+        const figureHighlighter = new FigureHighlighter(
+            this.plugin, highlightRepository, highlightManager, eventManager, highlightService
+        );
+        figureHighlighter.enable();
+        this.figureHighlighter = figureHighlighter;
+
         return {
             eventManager,
             dataManager,
@@ -109,6 +118,7 @@ export class InitializationManager {
         if (this.services?.highlightDecorator) {
             this.services.highlightDecorator.disable();
         }
+        this.figureHighlighter?.disable();
 
         // 清理高亮服务（注销事件监听器，清空索引）
         if (this.services?.highlightService) {

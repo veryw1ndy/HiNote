@@ -1,4 +1,4 @@
-import { HighlightInfo as HiNote, CommentItem } from '../types/highlight';
+import { HighlightInfo as HiNote, CommentItem, FigureAnchor } from '../types/highlight';
 
 /**
  * 新的优化数据格式
@@ -20,6 +20,7 @@ export interface OptimizedHighlight {
     blockId?: string;
     isCloze?: boolean;
     isVirtual?: boolean;
+    figure?: FigureAnchor;
     paragraphOffset?: number;
     contextBefore?: string;
     contextAfter?: string;
@@ -59,6 +60,7 @@ export function convertToLegacyHighlight(
         blockId: highlight.blockId,
         isCloze: highlight.isCloze || false,
         isVirtual: highlight.isVirtual || false,
+        figure: highlight.figure,
         paragraphOffset: highlight.paragraphOffset,
         contextBefore: highlight.contextBefore,
         contextAfter: highlight.contextAfter,
@@ -98,6 +100,10 @@ export function convertToOptimizedHighlight(highlight: HiNote): OptimizedHighlig
 
     if (highlight.isVirtual) {
         optimized.isVirtual = highlight.isVirtual;
+    }
+
+    if (highlight.figure) {
+        optimized.figure = highlight.figure;
     }
 
     if (highlight.paragraphOffset !== undefined) {

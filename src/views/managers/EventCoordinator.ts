@@ -61,6 +61,24 @@ export class EventCoordinator {
 
         // 监听评论输入事件
         this.registerCommentInputEvent();
+
+        // 图里的高亮变了：正文没改，modify 不会来
+        this.registerFigureHighlightEvent(getCurrentFile, isDraggedToMainView);
+    }
+
+    private registerFigureHighlightEvent(
+        getCurrentFile: () => TFile | null,
+        isDraggedToMainView: () => boolean
+    ): void {
+        const ref = this.eventManager.on('figure-highlight:change', (filePath) => {
+            const currentFile = getCurrentFile();
+            if (currentFile?.path === filePath && !isDraggedToMainView() && this.callbacks.onFileModify) {
+                this.callbacks.onFileModify(currentFile, false);
+            }
+        });
+
+        this.component.registerEvent(ref);
+        this.eventRefs.push(ref);
     }
 
     /**

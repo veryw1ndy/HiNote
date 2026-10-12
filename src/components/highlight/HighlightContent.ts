@@ -1,4 +1,4 @@
-import { MarkdownRenderer, Component, App } from "obsidian";
+import { MarkdownRenderer, Component, App, setIcon } from "obsidian";
 import { HighlightInfo } from "../../types/highlight";
 import { t } from "../../i18n";
 
@@ -50,6 +50,13 @@ export class HighlightContent extends Component {
         const textEl = this.textContainer.createEl("div", {
             cls: "highlight-text"
         });
+
+        // 图里的高亮：标出是哪张图
+        if (this.highlight.figure) {
+            const label = textEl.createEl("div", { cls: "highlight-figure-label" });
+            setIcon(label.createSpan({ cls: "highlight-figure-icon" }), "image");
+            label.createSpan({ text: this.highlight.figure.path.split('/').pop() || '' });
+        }
 
         // 创建文本内容元素，如果是虚拟高亮则使用 displayText
         const textContent = textEl.createEl("div", {

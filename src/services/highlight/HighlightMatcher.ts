@@ -86,12 +86,18 @@ export class HighlightMatcher {
             .filter(c => c.id && c.isVirtual && c.comments && c.comments.length > 0 && !usedCommentIds.has(c.id))
             .map(vh => this.createHighlightInfo(vh, file));
         
+        // 图里的高亮：正文里提取不到，没有批注也要列出来（划了就是划了）
+        const figureHighlights = storedComments
+            .filter(c => c.id && c.figure && !usedCommentIds.has(c.id))
+            .map(fh => this.createHighlightInfo(fh, file));
+
         // 异步更新存储中的定位锚点，防止偏移累积
         if (highlightUpdates.length > 0) {
             this.applyStoredHighlightUpdates(file.path, storedComments, highlightUpdates);
         }
         
-        return [...virtualHighlights, ...mergedHighlights];
+        return [...virtualHighlights, ...mergedHighlights, ...figureHighlights]
+            .sort((a, b) => (a.isVirtual ? -1 : 0) - (b.isVirtual ? -1 : 0) || (a.position ?? 0) - (b.position ?? 0));
     }
     
     /**

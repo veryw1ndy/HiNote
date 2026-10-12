@@ -3783,3 +3783,120 @@ body {
     box-shadow: inset 0 -0.15em 0 var(--hi-note-commented-edge);
     border-radius: 2px;
 }
+
+/* ── 图里的高亮 ───────────────────────────────────────────────────────────── */
+/* 图上盖一层只有字的 SVG（src/figure）：字透明但能选，高亮是最底下的半透明方块，
+   multiply 叠在原图上，原图的字照样清楚。 */
+
+.hi-note-figure-host {
+    position: relative;
+}
+
+.hi-note-figure-layer {
+    position: absolute;
+    overflow: visible;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+}
+
+/* 只有字和高亮露出来，别的（底色、方框、箭头）原图里已经有了 */
+.hi-note-figure-layer * {
+    visibility: hidden;
+}
+
+.hi-note-figure-layer text,
+.hi-note-figure-layer text * {
+    visibility: visible;
+    fill: transparent !important;
+    stroke: none !important;
+    pointer-events: auto;
+    cursor: text;
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+.hi-note-figure-layer text::selection,
+.hi-note-figure-layer text *::selection {
+    fill: transparent;
+    background-color: rgba(66, 133, 244, 0.35);
+}
+
+.hi-note-figure-layer .hi-note-figure-marks,
+.hi-note-figure-layer .hi-note-figure-marks * {
+    visibility: visible;
+}
+
+.hi-note-figure-mark {
+    fill: #ffeb3b;
+    fill-opacity: 0.75;
+}
+
+.hi-note-figure-mark.hi-note-commented {
+    fill: var(--hi-note-commented-bg);
+    fill-opacity: 1;
+}
+
+/* 侧栏点了这处高亮，在图里闪两下 */
+.hi-note-figure-mark.hi-note-figure-flash {
+    animation: hi-note-figure-flash 0.45s ease-in-out 3;
+}
+
+@keyframes hi-note-figure-flash {
+    50% { fill: var(--hi-note-commented-edge); fill-opacity: 1; }
+}
+
+/* 批注图标钉在高亮的右上角 */
+.hi-note-figure-widget {
+    position: absolute;
+    z-index: 2;
+    transform: translate(-35%, -65%);
+    line-height: 1;
+}
+
+/* 选中图里的字后弹出的小工具条 */
+.hi-note-figure-toolbar {
+    position: fixed;
+    z-index: var(--layer-menu);
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    box-shadow: var(--shadow-s);
+}
+
+.hi-note-figure-toolbar-button {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: auto;
+    padding: 4px 8px;
+    font-size: var(--font-ui-small);
+    background: transparent;
+    box-shadow: none;
+}
+
+.hi-note-figure-toolbar-button:hover {
+    background: var(--background-modifier-hover);
+}
+
+.hi-note-figure-toolbar-button svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* 侧栏卡片：标出是哪张图 */
+.highlight-figure-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 2px;
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+}
+
+.highlight-figure-icon svg {
+    width: 12px;
+    height: 12px;
+}

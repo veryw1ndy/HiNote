@@ -286,6 +286,10 @@ export class DataValidator {
             sanitized.paragraphOffset = highlight.paragraphOffset;
         }
 
+        if (this.isRecord(highlight.figure) && typeof highlight.figure.path === 'string') {
+            sanitized.figure = highlight.figure as unknown as HiNote['figure'];
+        }
+
         // 处理评论数组
         if (Array.isArray(highlight.comments)) {
             sanitized.comments = highlight.comments

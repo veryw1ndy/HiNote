@@ -7,6 +7,7 @@ export interface HighlightEvents {
     'comment:delete': [filePath: string, comment: string, sourceId: string];
     'comment-input:open': [highlightId: string, text: string];
     'flashcard:changed': [];
+    'figure-highlight:change': [filePath: string];
 }
 
 export class EventManager {
@@ -49,6 +50,13 @@ export class EventManager {
      */
     public emitCommentInputOpen(highlightId: string, text: string) {
         this.events.trigger('comment-input:open', highlightId, text);
+    }
+
+    /**
+     * 图里加了或删了高亮。正文没变，侧栏收不到 modify，要靠这个刷新。
+     */
+    public emitFigureHighlightChange(filePath: string) {
+        this.events.trigger('figure-highlight:change', filePath);
     }
 
     /**

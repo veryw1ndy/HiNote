@@ -278,6 +278,11 @@ export default {
     "Server error": "Server error",
     
     // Custom AI
-    "Detected API type": "Detected API type"
+    "Detected API type": "Detected API type",
 
+    // 图里的高亮
+    "Highlight": "Highlight",
+    "Comment": "Comment",
+    "Remove highlight": "Remove highlight",
+    "This highlight has comments. Removing it deletes them too.": "This highlight has comments. Removing it deletes them too."
 };

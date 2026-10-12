@@ -285,5 +285,11 @@ export default {
     "Server error": "服务器错误",
     
     // Custom AI 相关（已存在则跳过）
-    "Detected API type": "检测到的 API 类型"
+    "Detected API type": "检测到的 API 类型",
+
+    // 图里的高亮
+    "Highlight": "高亮",
+    "Comment": "批注",
+    "Remove highlight": "去掉高亮",
+    "This highlight has comments. Removing it deletes them too.": "这处高亮有批注，去掉高亮会把批注一起删掉。"
 };
