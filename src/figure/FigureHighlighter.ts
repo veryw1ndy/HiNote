@@ -223,8 +223,8 @@ export class FigureHighlighter {
     }
 
     /**
-     * 有批注的高亮右上角放 HiNote 的批注图标（带数量，悬停看批注，点开侧栏），
-     * 和正文高亮一样。没批注的，鼠标移到高亮上才出现。
+     * 高亮右上角放 HiNote 的批注图标（带数量，悬停看批注，点开侧栏），和正文高亮一样。
+     * 图里的字不会让开，图标会盖住它，所以不管有没有批注，鼠标移到高亮上才出现。
      */
     private placeWidgets(layer: FigureLayer, highlights: HiNote[]): void {
         this.clearWidgets(layer);
@@ -241,7 +241,7 @@ export class FigureHighlighter {
             widget.style.top = `${point.top}px`;
 
             const comments = highlight.comments || [];
-            const button = CommentWidgetHelper.createButton(widget, comments.length > 0);
+            const button = CommentWidgetHelper.createButton(widget, false);
             const openPanel = () => CommentWidgetHelper.openCommentPanel(this.app, highlight, this.eventManager);
 
             if (comments.length > 0) {
@@ -252,7 +252,6 @@ export class FigureHighlighter {
                 CommentWidgetHelper.setupClickEvent(button, tooltip, openPanel);
                 CommentWidgetHelper.createCleanupObserver(widget, tooltip);
             } else {
-                widget.addClass('hi-note-figure-widget-empty');
                 button.addEventListener('click', event => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -264,6 +263,8 @@ export class FigureHighlighter {
         }
 
         this.widgets.set(layer, widgets);
+        // 重画时鼠标还停在高亮上，新图标也要露出来
+        if (this.hoverWidget?.layer === layer) this.setHoverWidget(this.hoverWidget, true);
     }
 
     private clearWidgets(layer: FigureLayer): void {
@@ -271,7 +272,7 @@ export class FigureHighlighter {
         this.widgets.delete(layer);
     }
 
-    /** 鼠标停在没批注的高亮上时，才把它的批注按钮露出来 */
+    /** 鼠标停在高亮上时，才把它的批注按钮露出来 */
     private onMouseMove(event: MouseEvent): void {
         const target = event.target as Element | null;
         const overWidget = target?.closest?.('.hi-note-figure-widget');
@@ -294,8 +295,7 @@ export class FigureHighlighter {
     private setHoverWidget(entry: { layer: FigureLayer; id: string } | null, on: boolean): void {
         if (!entry) return;
         const widget = this.widgets.get(entry.layer)?.find(w => w.dataset.highlightId === entry.id);
-        if (!widget?.hasClass('hi-note-figure-widget-empty')) return;
-        widget.querySelector('.hi-note-button')?.toggleClass('hi-note-button-hidden', !on);
+        widget?.querySelector('.hi-note-button')?.toggleClass('hi-note-button-hidden', !on);
     }
 
     // ── 划高亮：选中图里的字 → 小工具条 ─────────────────────────────────────────
