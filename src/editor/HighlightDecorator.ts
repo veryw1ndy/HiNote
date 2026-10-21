@@ -17,7 +17,7 @@ export class HighlightDecorator {
     private highlightRepository: HighlightRepository;
     private highlightPlugin: ReturnType<typeof createEditorHighlightDecorations> | null = null;
     private highlightService: HighlightService;
-    private previewRenderer: PreviewWidgetRenderer;
+    readonly previewRenderer: PreviewWidgetRenderer;
 
     constructor(
         plugin: Plugin,

@@ -3909,3 +3909,26 @@ body {
     width: 12px;
     height: 12px;
 }
+
+/* ── 公式里的高亮（src/math/） ─────────────────────────────────────────── */
+.hi-note-math-host { position: relative; }
+.hi-note-math-host > svg, .hi-note-math-host > mjx-math { position: relative; }
+.hi-note-math-marks { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; }
+.hi-note-math-mark { position: absolute; border-radius: 2px; background: #ffeb3b; opacity: 0.75; pointer-events: none; }
+.theme-dark .hi-note-math-mark { opacity: 0.45; }
+.hi-note-math-mark.hi-note-commented { background: var(--hi-note-commented-bg); opacity: 1; box-shadow: none; }
+.hi-note-math-mark.hi-note-math-pending { background: var(--interactive-accent); opacity: 0.3; }
+.hi-note-math-mark.hi-note-math-flash { animation: hi-note-math-flash 0.45s ease-in-out 3; }
+@keyframes hi-note-math-flash { 50% { background: var(--hi-note-commented-edge); opacity: 1; } }
+.hi-note-math-widget { z-index: 3; }
+/* 实时预览里表格中有批注的 ==标记== */
+.markdown-source-view .table-wrapper mark.hi-note-commented,
+.markdown-source-view .cm-embed-block mark.hi-note-commented {
+    background-color: var(--hi-note-commented-bg);
+    box-shadow: inset 0 -0.15em 0 var(--hi-note-commented-edge);
+}
+.hi-note-math-band {
+    position: fixed; z-index: var(--layer-menu); pointer-events: none;
+    border: 1px dashed var(--interactive-accent);
+    background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+}

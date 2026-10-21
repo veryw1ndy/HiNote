@@ -88,6 +88,11 @@ export class PreviewHighlightResolver {
         // 公式拿掉以后两边的空格不一定对得上（「a $x$ b」剩「a  b」，屏幕上可能是「ab」），
         // 所以去掉全部空白再比。整条都是公式的高亮会剩空串、跟谁都相等，不算数。
         const stored = this.plainText(highlightText).replace(/\s+/g, '');
+        // 整条都是公式（==$x$==）：两边都只剩空串，那就比公式本身
+        if (stored === '' && this.plainText(domText).replace(/\s+/g, '') === '') {
+            const formula = (s: string) => s.replace(/\$/g, '').replace(/\s+/g, '');
+            return formula(highlightText) !== '' && formula(highlightText) === formula(domText);
+        }
         return stored !== '' && stored === this.plainText(domText).replace(/\s+/g, '');
     }
 
@@ -99,7 +104,15 @@ export class PreviewHighlightResolver {
      */
     markText(mark: Element): string {
         const copy = mark.cloneNode(true) as Element;
-        copy.querySelectorAll(`${MATH_SELECTOR}, .hi-note-widget`).forEach(el => el.remove());
+        copy.querySelectorAll('.hi-note-widget, .hi-note-math-marks').forEach(el => el.remove());
+        // 公式换回 $LaTeX$（MathJax 把原文留在 data-latex 里），整条都是公式的高亮才有字可比。
+        // 拿不到 LaTeX 的就去掉，和 plainText() 一样
+        copy.querySelectorAll(MATH_SELECTOR).forEach(el => {
+            if (!copy.contains(el)) return; // 外面那层已经换掉了
+            const latex = el.querySelector('[data-latex]')?.getAttribute('data-latex') || '';
+            const display = el.matches('.math-block, mjx-container[display=true]') || !!el.querySelector('mjx-container[display=true]');
+            el.replaceWith(latex ? (display ? `$$${latex}$$` : `$${latex}$`) : '');
+        });
         return copy.textContent ?? '';
     }
 

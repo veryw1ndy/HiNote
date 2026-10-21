@@ -1,6 +1,7 @@
 import { App, MarkdownView, Notice, TFile, WorkspaceLeaf } from "obsidian";
 import { HighlightInfo } from "../types/highlight";
 import { FIGURE_FLASH_EVENT } from "../figure/FigureHighlighter";
+import { MathSource } from "../math/mathSource";
 
 export class LocationService {
     constructor(private app: App) {}
@@ -31,10 +32,21 @@ export class LocationService {
         const markdownView = leaf.view as MarkdownView;
         const editor = markdownView.editor;
         const content = editor.getValue();
-        const name = highlight.figure!.path.split('/').pop() || '';
+        const figure = highlight.figure!;
+        // 公式：按它的 LaTeX 找；同一公式有好几份时找高亮做在的那一份；
+        // 没记 LaTeX 的旧高亮，就用存下的位置
+        let name = figure.kind === 'math' ? figure.tex || '' : figure.path.split('/').pop() || '';
 
         let best = -1;
-        for (let at = content.indexOf(name); at !== -1; at = content.indexOf(name, at + 1)) {
+        if (figure.kind === 'math') {
+            if (!name && highlight.position > 0) best = Math.min(highlight.position, content.length);
+            const resolved = name ? MathSource.resolve(content, highlight) : null;
+            if (resolved != null) {
+                best = resolved;
+                name = '';
+            }
+        }
+        for (let at = name ? content.indexOf(name) : -1; at !== -1; at = content.indexOf(name, at + 1)) {
             if (best === -1 || Math.abs(at - highlight.position) < Math.abs(best - highlight.position)) {
                 best = at;
             }

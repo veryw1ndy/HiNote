@@ -1,4 +1,4 @@
-import { HighlightInfo as HiNote, CommentItem, FigureAnchor } from '../types/highlight';
+import { HighlightInfo as HiNote, CommentItem } from '../types/highlight';
 
 /**
  * 新的优化数据格式
@@ -20,7 +20,7 @@ export interface OptimizedHighlight {
     blockId?: string;
     isCloze?: boolean;
     isVirtual?: boolean;
-    figure?: FigureAnchor;
+    figure?: HiNote['figure'];
     paragraphOffset?: number;
     contextBefore?: string;
     contextAfter?: string;

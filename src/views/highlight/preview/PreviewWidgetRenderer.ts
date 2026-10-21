@@ -61,6 +61,21 @@ export class PreviewWidgetRenderer {
         await this.renderMarks(file, marks, true);
     }
 
+    /** 这个 <mark> 已经配过、批注按钮也还在 */
+    isRendered(mark: Element): boolean {
+        return this.markContexts.has(mark) && !!mark.querySelector(':scope > .hi-note-widget');
+    }
+
+    /**
+     * 实时预览里表格（和别的块）是编辑器外面单独画的，post processor 碰不到里面的 <mark>：
+     * 它们一直是黄的，也没有批注按钮。把它们交给阅读模式这套来配，
+     * context 说明这个块覆盖原文的哪几行，同一句话出现几次时才配得对。
+     */
+    async adoptMarks(file: TFile, marks: Element[], root: HTMLElement, context: MarkdownPostProcessorContext): Promise<void> {
+        marks.forEach(mark => this.markContexts.set(mark, { root, context }));
+        await this.renderMarks(file, marks.filter(mark => mark.isConnected), true);
+    }
+
     /**
      * reset 为 true 时先清掉旧的小部件再画。清理放在读完数据之后，
      * 免得重画的那一下批注图标闪一下没了。

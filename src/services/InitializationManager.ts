@@ -1,3 +1,4 @@
+import { Notice } from 'obsidian';
 import { HighlightDecorator } from '../editor/HighlightDecorator';
 import { FSRSManager } from '../flashcard';
 import { HighlightService } from './HighlightService';
@@ -9,6 +10,7 @@ import { HighlightRepository } from '../repositories/HighlightRepository';
 import type CommentPlugin from '../../main';
 import type { PluginServices } from '../plugin/PluginServices';
 import { FigureHighlighter } from '../figure/FigureHighlighter';
+import { MathHighlighter } from '../math/MathHighlighter';
 
 /**
  * 初始化管理器
@@ -20,6 +22,7 @@ export class InitializationManager {
     private initializationPromise: Promise<PluginServices> | null = null;
     private services: PluginServices | null = null;
     private figureHighlighter: FigureHighlighter | null = null;
+    private mathHighlighter: MathHighlighter | null = null;
 
     constructor(private plugin: CommentPlugin) {}
 
@@ -96,6 +99,18 @@ export class InitializationManager {
         figureHighlighter.enable();
         this.figureHighlighter = figureHighlighter;
 
+        // 公式的一部分也能划
+        try {
+            const mathHighlighter = new MathHighlighter(
+                this.plugin, highlightRepository, highlightManager, eventManager, highlightService, highlightDecorator
+            );
+            mathHighlighter.enable();
+            this.mathHighlighter = mathHighlighter;
+        } catch (error) {
+            console.error('[HiNote] 公式高亮启动失败:', error);
+            new Notice(`Formula highlighting failed to start: ${error instanceof Error ? error.message : String(error)}`);
+        }
+
         return {
             eventManager,
             dataManager,
@@ -119,6 +134,7 @@ export class InitializationManager {
             this.services.highlightDecorator.disable();
         }
         this.figureHighlighter?.disable();
+        this.mathHighlighter?.disable();
 
         // 清理高亮服务（注销事件监听器，清空索引）
         if (this.services?.highlightService) {

@@ -60,6 +60,11 @@ export default class CommentPlugin extends Plugin {
 		this.addSettingTab(new AISettingTab(this.app, this));
 
 		registerPluginVaultEvents(this);
+
+		// 服务原本要等打开侧栏才启动，在那之前公式、图里的高亮和批注按钮都不画
+		this.app.workspace.onLayoutReady(() => {
+			this.ensureServicesInitialized().catch(error => console.error('[HiNote] 启动服务失败:', error));
+		});
 	}
 
 

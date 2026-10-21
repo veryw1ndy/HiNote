@@ -51,11 +51,12 @@ export class HighlightContent extends Component {
             cls: "highlight-text"
         });
 
-        // 图里的高亮：标出是哪张图
-        if (this.highlight.figure) {
+        // 图里的高亮：标出是哪张图（公式里的就写「formula」，它的 path 是指纹，不是文件名）
+        const figure = this.highlight.figure;
+        if (figure) {
             const label = textEl.createEl("div", { cls: "highlight-figure-label" });
             setIcon(label.createSpan({ cls: "highlight-figure-icon" }), "image");
-            label.createSpan({ text: this.highlight.figure.path.split('/').pop() || '' });
+            label.createSpan({ text: figure.kind === 'math' ? figure.label : figure.path.split('/').pop() || '' });
         }
 
         // 创建文本内容元素，如果是虚拟高亮则使用 displayText

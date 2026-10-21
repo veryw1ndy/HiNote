@@ -193,7 +193,7 @@ export class FigureLayer {
 
         for (const highlight of this.highlights) {
             const figure = highlight.figure;
-            if (!figure) continue;
+            if (!figure || figure.kind === 'math') continue;
 
             const boxes = this.boxesFor(figure);
             if (boxes.length === 0) continue;
