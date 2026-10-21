@@ -1,5 +1,23 @@
 # Obsidian community plugin
 
+## This fork
+
+This is Yawen's fork of HiNote (upstream: CatMuse/HiNote), used in the vault
+`veryw1ndy/Obsidian-CS-Notes`. **All plugin changes are made here**, in `src/`,
+never in the vault's `.obsidian/plugins/hi-note/` (which only holds a build of this
+repo) and never by patching a built `main.js`.
+
+- Work on `master`, commit, push.
+- Install into the vault: `npm run install-vault -- <path to vault>`. It builds, copies
+  `main.js`, `manifest.json`, `styles.css` (and `hinote-ocr` if built) into the vault,
+  and writes `fork-build.json` there with the commit it was built from. Then commit
+  that in the vault, and in Obsidian run Cmd-P → Reload HiNote.
+- Tests: `npm test` (each `scripts/test-*.mjs`; `scripts/lib/load-ts.mjs` bundles a
+  `src` module with `obsidian` stubbed out, for logic that does not need the app).
+- The npm registry in `package-lock.json` is npmmirror; elsewhere install with
+  `npm ci --registry=https://registry.npmjs.org/`.
+
+
 ## Project overview
 
 - Target: Obsidian Community Plugin (TypeScript → bundled JavaScript).
