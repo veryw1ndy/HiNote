@@ -18,6 +18,7 @@ export interface HighlightMatchOptions {
 }
 
 const TEXT_POSITION_THRESHOLD = 500;
+const TEXT_POSITION_TIE_MARGIN = 200;
 const CONTEXT_POSITION_THRESHOLD = 1200;
 const CONTEXT_SCORE_THRESHOLD = 1.35;
 const CONTEXT_TIE_MARGIN = 0.2;
@@ -102,6 +103,14 @@ function findTextPositionMatch(target: HiNote, candidates: HiNote[]): HiNote | n
 
     const best = sortedCandidates[0];
     if (!best || typeof best.position !== 'number') return null;
+
+    // 同一段文字存了两份、离得都不远（表格里两个格子都是 ==\\==）：靠位置分不清是哪一个。
+    // 这时随便挑最近的，文字一挪位置，批注就跑到另一个格子上，还会被写回去。
+    // 让后面的上下文匹配来判断，它拿不准时自己会放弃。
+    const second = sortedCandidates[1];
+    if (second && Math.abs(second.position - target.position) - Math.abs(best.position - target.position) < TEXT_POSITION_TIE_MARGIN) {
+        return null;
+    }
 
     return Math.abs(best.position - target.position) < TEXT_POSITION_THRESHOLD
         ? best

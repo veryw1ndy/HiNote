@@ -16,7 +16,6 @@ import { IdGenerator } from '../../utils/IdGenerator';
  */
 export class HighlightExtractor {
     // 常量定义
-    private static readonly DUPLICATE_POSITION_THRESHOLD = 10; // 位置差异阈值
     private static readonly CONTEXT_LENGTH = 80;
 
     // 默认的文本提取正则（可以被用户自定义替换）
@@ -155,10 +154,11 @@ export class HighlightExtractor {
                 extractedColor = this.extractColorFromElement(fullMatch);
             }
 
-            // 检查是否已存在相同位置的高亮
+            // 几条规则匹配到同一段时只留一条。只认完全相同的位置：
+            // 表格一行里两个一样的格子（==\\== | ==\\==）只隔几个字，按「相差不到 10」算的话第二个会被丢掉
             const isDuplicate = highlights.some(h => 
                 typeof h.position === 'number' && 
-                Math.abs(h.position - safeMatch.index) < HighlightExtractor.DUPLICATE_POSITION_THRESHOLD && 
+                h.position === safeMatch.index && 
                 h.text === text
             );
 
