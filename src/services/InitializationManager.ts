@@ -11,6 +11,7 @@ import type CommentPlugin from '../../main';
 import type { PluginServices } from '../plugin/PluginServices';
 import { FigureHighlighter } from '../figure/FigureHighlighter';
 import { MathHighlighter } from '../math/MathHighlighter';
+import { HighlightUndo } from './HighlightUndo';
 
 /**
  * 初始化管理器
@@ -23,6 +24,7 @@ export class InitializationManager {
     private services: PluginServices | null = null;
     private figureHighlighter: FigureHighlighter | null = null;
     private mathHighlighter: MathHighlighter | null = null;
+    private highlightUndo: HighlightUndo | null = null;
 
     constructor(private plugin: CommentPlugin) {}
 
@@ -111,6 +113,11 @@ export class InitializationManager {
             new Notice(`Formula highlighting failed to start: ${error instanceof Error ? error.message : String(error)}`);
         }
 
+        // 批注和高亮的 Cmd-Z / Cmd-Shift-Z
+        const highlightUndo = new HighlightUndo(this.plugin, highlightRepository, eventManager);
+        highlightUndo.enable();
+        this.highlightUndo = highlightUndo;
+
         return {
             eventManager,
             dataManager,
@@ -135,6 +142,7 @@ export class InitializationManager {
         }
         this.figureHighlighter?.disable();
         this.mathHighlighter?.disable();
+        this.highlightUndo?.disable();
 
         // 清理高亮服务（注销事件监听器，清空索引）
         if (this.services?.highlightService) {

@@ -14,6 +14,9 @@ export class HighlightRepository implements IHighlightRepository {
     private cache: Map<string, HiNote[]> = new Map();
     private dataManager: HiNoteDataManager;
 
+    /** 每次写盘前先调用（撤销靠它记下写之前的样子），见 HighlightUndo */
+    beforeWrite: ((filePath: string, next: HiNote[]) => Promise<void>) | null = null;
+
     constructor(dataManager: HiNoteDataManager) {
         this.dataManager = dataManager;
     }
@@ -71,13 +74,20 @@ export class HighlightRepository implements IHighlightRepository {
     }
 
     async saveFileHighlights(filePath: string, highlights: HiNote[]): Promise<void> {
+        await this.beforeWrite?.(filePath, highlights);
         this.cache.set(filePath, highlights);
         await this.dataManager.saveFileHighlights(filePath, highlights);
     }
 
     async deleteFileHighlights(filePath: string): Promise<void> {
+        await this.beforeWrite?.(filePath, []);
         this.cache.delete(filePath);
         await this.dataManager.deleteFileHighlights(filePath);
+    }
+
+    /** 盘上存的那份，不经过缓存：缓存里的可能已经是改过的了 */
+    async readStoredHighlights(filePath: string): Promise<HiNote[]> {
+        return this.dataManager.getFileHighlights(filePath);
     }
 
     async handleFileRename(oldPath: string, newPath: string): Promise<void> {
