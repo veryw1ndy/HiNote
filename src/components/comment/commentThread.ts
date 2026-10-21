@@ -27,3 +27,12 @@ export function hasCommentThread(highlight: HiNote): boolean {
     const color = highlight.backgroundColor?.trim().toLowerCase();
     return !color || color === DEFAULT_HIGHLIGHT_COLOR;
 }
+
+/**
+ * 侧栏卡片左边那道竖线的颜色，和笔记里这处高亮一致：换了紫色的用紫色（深一点的那个，
+ * 细线上浅紫几乎看不见），别的用它自己的颜色。
+ */
+export function highlightBarColor(highlight: HiNote): string {
+    if (hasCommentThread(highlight)) return "var(--hi-note-commented-edge)";
+    return highlight.backgroundColor || "";
+}

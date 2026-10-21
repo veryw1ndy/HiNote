@@ -7,6 +7,7 @@ import type { EventManager, HighlightEvents } from '../services/EventManager';
 import type { HighlightService } from '../services/HighlightService';
 import { IdGenerator } from '../utils/IdGenerator';
 import { CommentWidgetHelper } from '../components/comment/CommentWidgetHelper';
+import { hasCommentThread } from '../components/comment/commentThread';
 import { t } from '../i18n';
 import { showConfirmModal } from '../utils/ConfirmModal';
 import { FIGURE_FLASH_EVENT } from '../figure/FigureHighlighter';
@@ -357,7 +358,7 @@ export class CodeHighlighter {
         this.painted.forEach(p => p.drawn.forEach(({ highlight, range }) => {
             let name = COMMENTED;
             let color = commented;
-            if (!highlight.comments?.length) {
+            if (!hasCommentThread(highlight)) {
                 const picked = highlight.backgroundColor && SAFE_COLOR.test(highlight.backgroundColor)
                     ? highlight.backgroundColor : DEFAULT_COLOR;
                 name = `hi-note-code-${picked.replace(/[^a-zA-Z0-9]/g, '')}`;

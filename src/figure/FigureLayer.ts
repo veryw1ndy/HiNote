@@ -1,5 +1,6 @@
 import { FigureAnchor, HighlightInfo as HiNote } from "../types/highlight";
 import { figureTexts } from "./figureSvg";
+import { hasCommentThread } from "../components/comment/commentThread";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 /** 高亮比字框四周多出来一点，看起来才像马克笔划的，而不是贴着字边的框 */
@@ -198,7 +199,7 @@ export class FigureLayer {
             const boxes = this.boxesFor(figure);
             if (boxes.length === 0) continue;
 
-            const commented = !!highlight.comments?.length;
+            const commented = hasCommentThread(highlight);
             const rects = boxes.map(box => {
                 const rect = activeDocument.createElementNS(SVG_NS, 'rect');
                 rect.setAttribute('x', `${box.x}`);

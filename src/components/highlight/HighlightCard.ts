@@ -2,6 +2,7 @@ import { HighlightInfo, CommentItem } from "../../types/highlight";
 import type CommentPlugin from "../../../main";
 import { Notice } from "obsidian";
 import { t } from "../../i18n";
+import { highlightBarColor } from "../comment/commentThread";
 import { SelectionManager } from "../../views/selection";
 import { HighlightDeletionManager, HighlightIconManager } from "../../views/highlight";
 import {
@@ -296,6 +297,10 @@ export class HighlightCard {
         
         // 重置编辑状态，允许重新选中卡片
         this.selectionController.resetEditing();
+
+        // 第一条批注写上、最后一条删掉时，竖线跟着变色
+        const bar = this.card.querySelector<HTMLElement>('.highlight-text-decorator');
+        if (bar) bar.style.backgroundColor = highlightBarColor(updatedHighlight);
         
         // 查找评论列表容器
         const commentsSection = this.card.querySelector('.hi-notes-section');

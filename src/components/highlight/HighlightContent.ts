@@ -1,6 +1,7 @@
 import { MarkdownRenderer, Component, App, setIcon } from "obsidian";
 import { HighlightInfo } from "../../types/highlight";
 import { t } from "../../i18n";
+import { highlightBarColor } from "../comment/commentThread";
 
 export class HighlightContent extends Component {
     private container: HTMLElement;
@@ -41,10 +42,8 @@ export class HighlightContent extends Component {
             cls: "highlight-text-decorator"
         });
 
-        // 如果有背景色，应用到装饰器
-        if (this.highlight.backgroundColor) {
-            decorator.style.backgroundColor = this.highlight.backgroundColor;
-        }
+        // 竖线和笔记里的高亮同色（有批注的是紫色）
+        decorator.style.backgroundColor = highlightBarColor(this.highlight);
 
         // 高亮文本
         const textEl = this.textContainer.createEl("div", {

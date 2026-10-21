@@ -1,5 +1,6 @@
 import type { HighlightInfo as HiNote } from '../types/highlight';
 import { MathBox, MathDom } from './mathDom';
+import { hasCommentThread } from '../components/comment/commentThread';
 
 interface DrawnHighlight {
     highlight: HiNote;
@@ -75,7 +76,7 @@ export class MathLayer {
             if (f?.kind !== 'math' || !Array.isArray(f.leaves)) continue;
             const boxes = MathDom.boxes(this.container, f.leaves);
             if (!boxes.length) continue;
-            const commented = !!h.comments?.length;
+            const commented = hasCommentThread(h);
             const rects = add(boxes, commented ? 'hi-note-commented' : '', h);
             if (!commented && h.backgroundColor) rects.forEach(r => (r.style.background = h.backgroundColor!));
             this.drawn.push({ highlight: h, boxes, rects });
