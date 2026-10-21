@@ -11,6 +11,7 @@ import type CommentPlugin from '../../main';
 import type { PluginServices } from '../plugin/PluginServices';
 import { FigureHighlighter } from '../figure/FigureHighlighter';
 import { MathHighlighter } from '../math/MathHighlighter';
+import { CodeHighlighter } from '../code/CodeHighlighter';
 import { HighlightUndo } from './HighlightUndo';
 
 /**
@@ -24,6 +25,7 @@ export class InitializationManager {
     private services: PluginServices | null = null;
     private figureHighlighter: FigureHighlighter | null = null;
     private mathHighlighter: MathHighlighter | null = null;
+    private codeHighlighter: CodeHighlighter | null = null;
     private highlightUndo: HighlightUndo | null = null;
 
     constructor(private plugin: CommentPlugin) {}
@@ -113,6 +115,17 @@ export class InitializationManager {
             new Notice(`Formula highlighting failed to start: ${error instanceof Error ? error.message : String(error)}`);
         }
 
+        // 代码块里的字也能划
+        try {
+            const codeHighlighter = new CodeHighlighter(
+                this.plugin, highlightRepository, highlightManager, eventManager, highlightService
+            );
+            codeHighlighter.enable();
+            this.codeHighlighter = codeHighlighter;
+        } catch (error) {
+            console.error('[HiNote] 代码块高亮启动失败:', error);
+        }
+
         // 批注和高亮的 Cmd-Z / Cmd-Shift-Z
         const highlightUndo = new HighlightUndo(this.plugin, highlightRepository, eventManager);
         highlightUndo.enable();
@@ -142,6 +155,7 @@ export class InitializationManager {
         }
         this.figureHighlighter?.disable();
         this.mathHighlighter?.disable();
+        this.codeHighlighter?.disable();
         this.highlightUndo?.disable();
 
         // 清理高亮服务（注销事件监听器，清空索引）

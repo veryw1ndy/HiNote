@@ -2,6 +2,7 @@ import { App, MarkdownView, Notice, TFile, WorkspaceLeaf } from "obsidian";
 import { HighlightInfo } from "../types/highlight";
 import { FIGURE_FLASH_EVENT } from "../figure/FigureHighlighter";
 import { MathSource } from "../math/mathSource";
+import { CodeSource } from "../code/codeSource";
 
 export class LocationService {
     constructor(private app: App) {}
@@ -35,9 +36,17 @@ export class LocationService {
         const figure = highlight.figure!;
         // 公式：按它的 LaTeX 找；同一公式有好几份时找高亮做在的那一份；
         // 没记 LaTeX 的旧高亮，就用存下的位置
-        let name = figure.kind === 'math' ? figure.tex || '' : figure.path.split('/').pop() || '';
+        let name = figure.kind === 'math' ? figure.tex || ''
+            : figure.kind === 'code' ? ''
+            : figure.path.split('/').pop() || '';
 
         let best = -1;
+        if (figure.kind === 'code') {
+            // 代码块：找到高亮现在在哪个代码块的哪儿；找不到就用存下的位置
+            const blocks = CodeSource.blocks(content);
+            const spot = CodeSource.resolve(blocks, highlight);
+            best = spot ? CodeSource.toSrc(blocks[spot.block], spot.from) : Math.min(highlight.position, content.length);
+        }
         if (figure.kind === 'math') {
             if (!name && highlight.position > 0) best = Math.min(highlight.position, content.length);
             const resolved = name ? MathSource.resolve(content, highlight) : null;

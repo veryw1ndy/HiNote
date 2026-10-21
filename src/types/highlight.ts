@@ -34,6 +34,18 @@ export interface MathAnchor {
     lineNth?: number;
 }
 
+/**
+ * 代码块里的一处高亮：哪个代码块（path 是代码的指纹，见 src/code/codeSource.ts），
+ * 代码里第几个字到第几个字（不含）。label 是代码块的语言。
+ */
+export interface CodeAnchor {
+    kind: 'code';
+    path: string;
+    label: string;
+    from: [charIndex: number];
+    to: [charIndex: number];
+}
+
 export interface HighlightInfo {
     id?: string;
     text: string;
@@ -56,8 +68,8 @@ export interface HighlightInfo {
     originalLength?: number;
 
     isVirtual?: boolean;
-    /** 有这个字段的是图里（或公式里）的高亮：笔记正文里没有它的 ==…==，不要拿去和正文匹配。 */
-    figure?: FigureAnchor | MathAnchor;
+    /** 有这个字段的是图里（或公式里、代码块里）的高亮：笔记正文里没有它的 ==…==，不要拿去和正文匹配。 */
+    figure?: FigureAnchor | MathAnchor | CodeAnchor;
     isCloze?: boolean;
     isGlobalSearch?: boolean;
     isFromCanvas?: boolean;

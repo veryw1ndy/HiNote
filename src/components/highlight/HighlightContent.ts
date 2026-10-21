@@ -51,12 +51,15 @@ export class HighlightContent extends Component {
             cls: "highlight-text"
         });
 
-        // 图里的高亮：标出是哪张图（公式里的就写「formula」，它的 path 是指纹，不是文件名）
+        // 图里的高亮：标出是哪张图（公式里的就写「formula」，代码块里的写语言，它们的 path 是指纹，不是文件名）
         const figure = this.highlight.figure;
         if (figure) {
             const label = textEl.createEl("div", { cls: "highlight-figure-label" });
-            setIcon(label.createSpan({ cls: "highlight-figure-icon" }), "image");
-            label.createSpan({ text: figure.kind === 'math' ? figure.label : figure.path.split('/').pop() || '' });
+            setIcon(label.createSpan({ cls: "highlight-figure-icon" }), figure.kind === 'code' ? "code" : "image");
+            const name = figure.kind === 'math' ? figure.label
+                : figure.kind === 'code' ? figure.label || 'code'
+                : figure.path.split('/').pop() || '';
+            label.createSpan({ text: name });
         }
 
         // 创建文本内容元素，如果是虚拟高亮则使用 displayText
@@ -65,7 +68,12 @@ export class HighlightContent extends Component {
         });
 
         // 处理文本中的换行符，添加空值检查
-        const text = this.highlight.text || '';
+        let text = this.highlight.text || '';
+        // 代码块里划的字照代码显示，不当 Markdown 解析
+        if (figure?.kind === 'code') {
+            const fence = '`'.repeat(Math.max(3, ...(text.match(/`+/g) || []).map(run => run.length + 1)));
+            text = `${fence}${figure.label}\n${text}\n${fence}`;
+        }
         
         try {
             // 使用 Obsidian 的 MarkdownRenderer.render 方法渲染 Markdown 内容
