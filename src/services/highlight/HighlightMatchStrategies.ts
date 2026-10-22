@@ -55,6 +55,35 @@ export function findStoredHighlightMatch(
     return null;
 }
 
+/**
+ * 删除一条高亮时，要删的是哪条存下来的记录。
+ *
+ * 比重新定位锚点时松一点，而且必须松：匹配不上就只删掉笔记里的 ==，记录和批注留在
+ * .hinote/highlights/<note>.json 里，面板上也看不见了（正文里提取不到的记录不列出来），
+ * 只能去跑 hinote.py drop。同一段文字存了两份又离得近的时候，findStoredHighlightMatch
+ * 会放弃（写回去可能写到另一份上）；删除没有这个顾虑：卡片自己带着位置，挑最近的那份。
+ * 图里的高亮还是只认 ID：它的文字也可能出现在正文里，删错了记录连高亮本身都没了。
+ */
+export function findStoredHighlightToDelete(
+    target: HiNote,
+    candidates: HiNote[]
+): HiNote | null {
+    const match = findStoredHighlightMatch(target, candidates);
+    if (match) return match.highlight;
+    if (target.figure || !target.text) return null;
+
+    const sameText = candidates.filter(candidate => !candidate.figure && candidate.text === target.text);
+    if (sameText.length === 0) return null;
+    if (sameText.length === 1) return sameText[0];
+    if (typeof target.position !== 'number') return null;
+
+    const nearest = sameText
+        .filter(candidate => typeof candidate.position === 'number')
+        .sort((a, b) => Math.abs(a.position! - target.position!) - Math.abs(b.position! - target.position!))[0];
+
+    return nearest || null;
+}
+
 export function canUpdateStoredHighlight(confidence: HighlightMatchConfidence): boolean {
     return confidence === 'id' ||
         confidence === 'block-text' ||

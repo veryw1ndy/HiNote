@@ -45,16 +45,25 @@ export class HighlightDeletionManager {
                 }
             }
             
-            // 删除文件中的高亮格式
+            // 先删存下来的记录，再删笔记里的 ==：
+            //  - 记录是靠文字、位置、上下文找的，笔记还没动的时候最准（删掉 == 会让
+            //    后面每条记录的位置都差上 4 个字符）；
+            //  - 删不掉就别动笔记：== 没了而记录还在，面板上也看不见那条记录了
+            //    （正文里提取不到的记录不列出来），只能去跑 hinote.py drop。
             if (highlight.filePath) {
-                await this.removeHighlightFromFile(highlight);
-                
-                // 从 HighlightManager 中删除高亮
                 const file = this.plugin.app.vault.getAbstractFileByPath(highlight.filePath);
                 if (file instanceof TFile) {
-                    await this.plugin.highlightManager.removeHighlight(file, highlight);
+                    const removed = await this.plugin.highlightManager.removeHighlight(file, highlight);
+                    if (!removed) {
+                        if (!skipNotice) {
+                            new Notice(t('Could not find this highlight\'s saved comments, so nothing was deleted'));
+                        }
+                        return false;
+                    }
                 }
-                
+
+                await this.removeHighlightFromFile(highlight);
+
                 // 触发高亮删除事件
                 this.plugin.eventManager.emitHighlightDelete(
                     highlight.filePath,

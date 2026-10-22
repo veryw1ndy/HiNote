@@ -61,17 +61,24 @@ export class BatchHighlightDeletionOperations {
         let fileMarkSuccess = 0;
         let fileMarkFailed = 0;
         let dataDeleteFailed = 0;
+        let deletedHighlights: HighlightInfo[] = [];
 
         try {
             this.deleteRelatedFlashcards(highlightsArray);
 
-            const result = await this.removeHighlightMarks(highlightsArray);
+            // 先删记录、再删笔记里的 ==：记录是靠文字和位置找的，笔记还没动的时候最准，
+            // 而且删不掉的那几条不会只剩一条没人管的记录（面板上也看不见）。
+            const { failed, deleted } = await this.removeHighlightData(highlightsArray);
+            dataDeleteFailed = failed;
+            deletedHighlights = deleted;
+
+            const result = await this.removeHighlightMarks(deleted);
             fileMarkSuccess = result.success;
             fileMarkFailed = result.failed;
-
-            dataDeleteFailed = await this.removeHighlightData(highlightsArray);
-            this.cleanupRenderedCards(highlightsArray);
-            this.emitDeleteEvents(highlightsArray, fileMarkSuccess);
+            // 卡片只收掉真的删掉了的那几条：删不掉的那条还在笔记里、记录也还在，
+            // 收了卡片她就再也点不到它了
+            this.cleanupRenderedCards(deletedHighlights);
+            this.emitDeleteEvents(deletedHighlights, fileMarkSuccess);
         } catch (error) {
             console.error("[BatchDelete] 批量删除过程出错:", error);
             fileMarkFailed = highlightsArray.length;
@@ -113,11 +120,15 @@ export class BatchHighlightDeletionOperations {
         return await this.options.highlightService.batchRemoveHighlightMarks(highlightsToRemove);
     }
 
-    private async removeHighlightData(highlights: HighlightInfo[]): Promise<number> {
+    /** @returns 删不掉的条数，和真的删掉了记录的那几条（它们的 == 才该从笔记里去掉） */
+    private async removeHighlightData(
+        highlights: HighlightInfo[]
+    ): Promise<{ failed: number; deleted: HighlightInfo[] }> {
         const highlightManager = this.options.plugin.highlightManager;
-        if (!highlightManager) return 0;
+        if (!highlightManager) return { failed: 0, deleted: highlights };
 
         let dataDeleteFailed = 0;
+        const deleted: HighlightInfo[] = [];
         const highlightsByFile = new Map<string, HighlightInfo[]>();
 
         for (const highlight of highlights) {
@@ -136,7 +147,13 @@ export class BatchHighlightDeletionOperations {
 
                 for (const highlight of fileHighlights) {
                     try {
-                        await highlightManager.removeHighlight(file, highlight);
+                        // removeHighlight 找不到记录时返回 false，不抛错：当成失败，
+                        // 别让它变成"卡片没了、记录还在"而且什么都不说
+                        if (await highlightManager.removeHighlight(file, highlight)) {
+                            deleted.push(highlight);
+                        } else {
+                            dataDeleteFailed++;
+                        }
                     } catch (error) {
                         console.error("[BatchDelete] 从 HighlightManager 删除失败:", highlight.id, error);
                         dataDeleteFailed++;
@@ -148,7 +165,7 @@ export class BatchHighlightDeletionOperations {
             }
         }
 
-        return dataDeleteFailed;
+        return { failed: dataDeleteFailed, deleted };
     }
 
     private cleanupRenderedCards(highlights: HighlightInfo[]): void {

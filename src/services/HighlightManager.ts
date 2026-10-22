@@ -4,7 +4,7 @@ import { IHighlightRepository } from '../repositories/IHighlightRepository';
 import { EventManager } from './EventManager';
 import { HighlightService } from './HighlightService';
 import { IdGenerator } from '../utils/IdGenerator';
-import { findStoredHighlightMatch } from './highlight/HighlightMatchStrategies';
+import { findStoredHighlightToDelete } from './highlight/HighlightMatchStrategies';
 
 /**
  * 高亮管理器 - 业务逻辑层
@@ -77,14 +77,15 @@ export class HighlightManager {
         const filePath = file.path;
         const fileHighlights = await this.repository.getFileHighlights(filePath);
 
-        // ID 优先；找不到就按统一策略再找一次。面板上的那条可能是重新定位过的，
+        // ID 优先；找不到就按删除用的那套策略再找一次。面板上的那条可能是重新定位过的，
         // ID 跟盘上存的那条已经不是一个了，只认 ID 的话删除会悄悄失败：
         // 卡片没了，盘上还在，下次划同一段文字批注就回来了。
-        let target = fileHighlights.find(h => h.id === highlight.id);
+        let target: HiNote | undefined = fileHighlights.find(h => h.id === highlight.id);
         if (!target) {
-            target = findStoredHighlightMatch(highlight, fileHighlights)?.highlight;
+            target = findStoredHighlightToDelete(highlight, fileHighlights) ?? undefined;
         }
         if (!target) {
+            console.warn(`[HiNote] ${filePath}: no stored highlight matches "${highlight.text}" (${highlight.id ?? 'no id'}), nothing deleted`);
             return false;
         }
 

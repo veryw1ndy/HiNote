@@ -291,5 +291,6 @@ export default {
     "Highlight": "高亮",
     "Comment": "批注",
     "Remove highlight": "去掉高亮",
-    "This highlight has comments. Removing it deletes them too.": "这处高亮有批注，去掉高亮会把批注一起删掉。"
+    "This highlight has comments. Removing it deletes them too.": "这处高亮有批注，去掉高亮会把批注一起删掉。",
+    "Could not find this highlight's saved comments, so nothing was deleted": "找不到这处高亮存下来的批注，什么都没有删。"
 };

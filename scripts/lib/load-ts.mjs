@@ -6,12 +6,22 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
+// TFile 用 Symbol.hasInstance：测试里传的是 {path, basename, extension} 这样的假文件，
+// 真正的 TFile 构造不出来，而被测代码到处在写 file instanceof TFile。
 const OBSIDIAN_STUB = `
-export class App {} export class TFile {} export class TFolder {} export class Notice {}
+export class App {}
+export class TFile {
+    static [Symbol.hasInstance](value) {
+        return !!value && typeof value === 'object' &&
+            typeof value.path === 'string' && typeof value.extension === 'string';
+    }
+}
+export class TFolder {} export class Notice {}
 export class MarkdownView {} export class Menu {} export class Modal {} export class Component {}
 export class Plugin {} export class FileSystemAdapter {} export class WorkspaceLeaf {}
 export const setIcon = () => {}; export const normalizePath = (s) => s; export const getLinkpath = (s) => s;
-export const debounce = (f) => f; export const moment = () => ({});
+export const debounce = (f) => f;
+export const moment = Object.assign(() => ({}), { locale: () => 'en' });
 `;
 
 export async function loadTs(entry) {

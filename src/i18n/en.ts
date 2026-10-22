@@ -284,5 +284,6 @@ export default {
     "Highlight": "Highlight",
     "Comment": "Comment",
     "Remove highlight": "Remove highlight",
-    "This highlight has comments. Removing it deletes them too.": "This highlight has comments. Removing it deletes them too."
+    "This highlight has comments. Removing it deletes them too.": "This highlight has comments. Removing it deletes them too.",
+    "Could not find this highlight's saved comments, so nothing was deleted": "Could not find this highlight's saved comments, so nothing was deleted"
 };
