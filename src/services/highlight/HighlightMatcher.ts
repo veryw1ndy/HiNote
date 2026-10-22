@@ -22,6 +22,9 @@ interface StoredHighlightUpdate {
  * 3. 高置信匹配成功后异步更新存储中的定位锚点，防止偏移累积
  */
 export class HighlightMatcher {
+    /** 每个文件待写盘的锚点补丁，按高亮 ID 存，定时器触发时才去碰真正的数据 */
+    private pendingAnchorUpdates: Map<string, Map<string, Partial<HiNote>>> = new Map();
+
     constructor(
         private getHighlightRepository?: () => HighlightRepository | undefined
     ) {}
@@ -93,7 +96,7 @@ export class HighlightMatcher {
 
         // 异步更新存储中的定位锚点，防止偏移累积
         if (highlightUpdates.length > 0) {
-            this.applyStoredHighlightUpdates(file.path, storedComments, highlightUpdates);
+            this.applyStoredHighlightUpdates(file.path, highlightUpdates);
         }
         
         return [...virtualHighlights, ...mergedHighlights, ...figureHighlights]
@@ -138,41 +141,60 @@ export class HighlightMatcher {
     }
     
     /**
-     * 异步批量更新存储中的定位锚点，防止偏移累积导致匹配失败
+     * 异步批量更新存储中的定位锚点，防止偏移累积导致匹配失败。
+     * 一个文件只排一个定时器，补丁按高亮 ID 累积。
      */
     private applyStoredHighlightUpdates(
         filePath: string,
-        storedComments: HiNote[],
         updates: StoredHighlightUpdate[]
     ): void {
-        // 使用 setTimeout 异步执行，不阻塞合并流程
-        window.setTimeout(() => {
-            void this.saveStoredHighlightUpdates(filePath, storedComments, updates);
-        }, 100);
+        let pending = this.pendingAnchorUpdates.get(filePath);
+        if (!pending) {
+            pending = new Map<string, Partial<HiNote>>();
+            this.pendingAnchorUpdates.set(filePath, pending);
+            // 使用 setTimeout 异步执行，不阻塞合并流程
+            window.setTimeout(() => {
+                const patches = this.pendingAnchorUpdates.get(filePath);
+                this.pendingAnchorUpdates.delete(filePath);
+                if (patches && patches.size > 0) {
+                    void this.saveStoredHighlightUpdates(filePath, patches);
+                }
+            }, 100);
+        }
+
+        for (const update of updates) {
+            pending.set(update.id, { ...(pending.get(update.id) || {}), ...update.patch });
+        }
     }
 
     private async saveStoredHighlightUpdates(
         filePath: string,
-        storedComments: HiNote[],
-        updates: StoredHighlightUpdate[]
+        patches: Map<string, Partial<HiNote>>
     ): Promise<void> {
         try {
-            const updateMap = new Map(updates.map(u => [u.id, u.patch]));
+            const highlightRepository = this.getHighlightRepository?.();
+            if (!highlightRepository) return;
+
+            // 现在存着的是什么就改什么，不能照排定时器时拿到的那份数组写回去：
+            // 这 100ms 里批注可能已经删了，写回快照等于让删掉的高亮连批注一起复活。
+            const current = highlightRepository.getCachedHighlights(filePath)
+                || await highlightRepository.getFileHighlights(filePath);
             let changed = false;
 
-            for (const comment of storedComments) {
-                if (comment.id && updateMap.has(comment.id)) {
-                    Object.assign(comment, updateMap.get(comment.id)!);
-                    comment.updatedAt = Date.now();
-                    changed = true;
-                }
+            for (const comment of current) {
+                const patch = comment.id ? patches.get(comment.id) : undefined;
+                if (!patch) continue;
+
+                const entries = Object.entries(patch) as Array<[keyof HiNote, unknown]>;
+                if (entries.every(([key, value]) => comment[key] === value)) continue;
+
+                Object.assign(comment, patch);
+                comment.updatedAt = Date.now();
+                changed = true;
             }
 
             if (changed) {
-                const highlightRepository = this.getHighlightRepository?.();
-                if (highlightRepository) {
-                    await highlightRepository.saveFileHighlights(filePath, storedComments);
-                }
+                await highlightRepository.saveFileHighlights(filePath, current);
             }
         } catch {
             // 静默处理，定位锚点更新失败不影响主流程
