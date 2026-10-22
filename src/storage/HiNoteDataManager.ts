@@ -123,6 +123,17 @@ export class HiNoteDataManager {
     }
 
     /**
+     * 只看一眼盘上那份，不把它记成"插件看到的"（撤销要记下写之前的样子，用这个）。
+     * 用 getFileHighlights 会把 base 换成盘上现在那份，外面刚写进去的东西就被当成
+     * 插件自己的了，下一次写盘又会把它盖掉。
+     */
+    async peekStoredHighlights(filePath: string): Promise<HiNote[]> {
+        const storagePath = this.getStoragePathForFile(filePath);
+        const read = await this.readStorage(storagePath, filePath);
+        return read ? this.toLegacy(read.highlights, filePath) : [];
+    }
+
+    /**
      * 盘上现在存的那份，和插件上一次看到的那份比过了：一样就是 null。
      * `.hinote` 是点目录，不在 vault 的文件树里，所以 vault.on('modify') 不会来，
      * 只能靠 adapter.stat() 自己比。

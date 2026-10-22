@@ -106,9 +106,9 @@ export class HighlightRepository implements IHighlightRepository {
         await this.dataManager.deleteFileHighlights(filePath);
     }
 
-    /** 盘上存的那份，不经过缓存：缓存里的可能已经是改过的了 */
+    /** 盘上存的那份，不经过缓存：缓存里的可能已经是改过的了。只是看一眼，不动合并用的 base */
     async readStoredHighlights(filePath: string): Promise<HiNote[]> {
-        return this.dataManager.getFileHighlights(filePath);
+        return this.dataManager.peekStoredHighlights(filePath);
     }
 
     async handleFileRename(oldPath: string, newPath: string): Promise<void> {

@@ -206,4 +206,24 @@ const commentsOf = (highlights, id) => highlights[id].comments.map(c => c.conten
     assert.deepEqual(await watcher.check(), [], "the plugin's own write is not seen as an outside write");
 }
 
+// --- 7. 撤销功能读一遍存着的那份，不能把"上次见到的"重新盖章 ---
+{
+    const { adapter, repository, cached } = await setup({
+        h1: highlight("$\\exists$", [agent("C is the client's answer type")]),
+    });
+
+    outsideWrite(adapter, { h1: highlight("$\\exists$", [agent("Z is the client's answer type")]) });
+
+    // HighlightUndo 每次改动前都读一遍（record → readStoredHighlights）。
+    // 如果这一读也算"我见过了"，base 就变成了盘上那份，下面那次写盘又会把外面的盖掉。
+    const seen = await repository.readStoredHighlights(NOTE);
+    assert.deepEqual(seen[0].comments.map(c => c.content), ["Z is the client's answer type"],
+        "the undo recorder reads what is actually on disk");
+
+    await repository.saveFileHighlights(NOTE, cached);
+
+    assert.deepEqual(commentsOf(onDisk(adapter), "h1"), ["Z is the client's answer type"],
+        "and reading it must not cost the outside write");
+}
+
 console.log("external-write reload: ok");
