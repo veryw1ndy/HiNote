@@ -76,7 +76,28 @@ export class HighlightRepository implements IHighlightRepository {
     async saveFileHighlights(filePath: string, highlights: HiNote[]): Promise<void> {
         await this.beforeWrite?.(filePath, highlights);
         this.cache.set(filePath, highlights);
-        await this.dataManager.saveFileHighlights(filePath, highlights);
+        // 盘上那份被外面改过的话，存下来的是合并后的那份：缓存要跟着它，不是跟着我们送进去的
+        const persisted = await this.dataManager.saveFileHighlights(filePath, highlights);
+        if (persisted && persisted !== highlights) {
+            this.cache.set(filePath, persisted);
+        }
+    }
+
+    /**
+     * 盘上那份被外面改过（hinote.py、git、同步）就读回来，返回新的那份；没变返回 null。
+     * 缓存里这份没有还没写出去的改动时，就是直接用盘上那份，不再把它盖掉。
+     */
+    async reloadFromDisk(filePath: string): Promise<HiNote[] | null> {
+        const mine = this.cache.get(filePath) || [];
+        const reloaded = await this.dataManager.reloadIfChangedOnDisk(filePath, mine);
+        if (!reloaded) return null;
+
+        if (reloaded.length > 0) {
+            this.cache.set(filePath, reloaded);
+        } else {
+            this.cache.delete(filePath);
+        }
+        return reloaded;
     }
 
     async deleteFileHighlights(filePath: string): Promise<void> {

@@ -13,6 +13,7 @@ import { FigureHighlighter } from '../figure/FigureHighlighter';
 import { MathHighlighter } from '../math/MathHighlighter';
 import { CodeHighlighter } from '../code/CodeHighlighter';
 import { HighlightUndo } from './HighlightUndo';
+import { HighlightFileWatcher } from '../storage/HighlightFileWatcher';
 
 /**
  * 初始化管理器
@@ -27,6 +28,7 @@ export class InitializationManager {
     private mathHighlighter: MathHighlighter | null = null;
     private codeHighlighter: CodeHighlighter | null = null;
     private highlightUndo: HighlightUndo | null = null;
+    private highlightFileWatcher: HighlightFileWatcher | null = null;
 
     constructor(private plugin: CommentPlugin) {}
 
@@ -126,6 +128,13 @@ export class InitializationManager {
             console.error('[HiNote] 代码块高亮启动失败:', error);
         }
 
+        // 外面改了 .hinote/highlights/*.json（hinote.py、git、同步）就读回来，不用重载插件
+        const highlightFileWatcher = new HighlightFileWatcher(
+            this.plugin, highlightRepository, eventManager
+        );
+        highlightFileWatcher.enable();
+        this.highlightFileWatcher = highlightFileWatcher;
+
         // 批注和高亮的 Cmd-Z / Cmd-Shift-Z
         const highlightUndo = new HighlightUndo(this.plugin, highlightRepository, eventManager);
         highlightUndo.enable();
@@ -157,6 +166,7 @@ export class InitializationManager {
         this.mathHighlighter?.disable();
         this.codeHighlighter?.disable();
         this.highlightUndo?.disable();
+        this.highlightFileWatcher?.disable();
 
         // 清理高亮服务（注销事件监听器，清空索引）
         if (this.services?.highlightService) {
