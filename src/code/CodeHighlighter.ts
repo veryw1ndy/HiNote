@@ -388,7 +388,7 @@ export class CodeHighlighter {
         return this.cmOf(view)?.scrollDOM ?? null;
     }
 
-    /** 和图、公式里的一样，鼠标移到高亮上才出现：图标会盖住代码 */
+    /** 和公式里的一样：有批注的一直显示，没批注的鼠标移到高亮上才出现 */
     private placeWidgets(view: MarkdownView): void {
         const p = this.painted.get(view);
         if (!p) return;
@@ -429,7 +429,7 @@ export class CodeHighlighter {
             widget.style.top = `${top}px`;
 
             const comments = highlight.comments || [];
-            const button = CommentWidgetHelper.createButton(widget, false);
+            const button = CommentWidgetHelper.createButton(widget, comments.length > 0);
             const openPanel = () => CommentWidgetHelper.openCommentPanel(this.app, highlight, this.eventManager);
             if (comments.length > 0) {
                 const icon = button.querySelector('.hi-note-icon-container') as HTMLElement;
@@ -439,6 +439,7 @@ export class CodeHighlighter {
                 CommentWidgetHelper.setupClickEvent(button, tooltip, openPanel);
                 CommentWidgetHelper.createCleanupObserver(widget, tooltip);
             } else {
+                widget.addClass('hi-note-figure-widget-empty');
                 button.addEventListener('click', event => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -465,7 +466,7 @@ export class CodeHighlighter {
         return null;
     }
 
-    /** 鼠标停在高亮上时，才把它的批注按钮露出来 */
+    /** 鼠标停在没批注的高亮上时，才把它的批注按钮露出来 */
     private onMouseMove(event: MouseEvent): void {
         const target = event.target as Element | null;
         if (target?.closest?.('.hi-note-code-widget')) return;
@@ -483,7 +484,9 @@ export class CodeHighlighter {
     private setHover(entry: { view: MarkdownView; id: string } | null, on: boolean): void {
         if (!entry) return;
         const widget = this.painted.get(entry.view)?.widgets.find(w => w.dataset.highlightId === entry.id);
-        widget?.querySelector('.hi-note-button')?.toggleClass('hi-note-button-hidden', !on);
+        // 有批注的图标一直露着，只有没批注的才跟着鼠标出没
+        if (!widget?.hasClass('hi-note-figure-widget-empty')) return;
+        widget.querySelector('.hi-note-button')?.toggleClass('hi-note-button-hidden', !on);
     }
 
     private flash(view: MarkdownView, id: string, retry = true): void {

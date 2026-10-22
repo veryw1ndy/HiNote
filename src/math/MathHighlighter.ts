@@ -391,7 +391,7 @@ export class MathHighlighter {
         this.layerOf.delete(layer.container);
     }
 
-    /** 批注按钮，和图里的一样：鼠标移到高亮上才出现 */
+    /** 批注按钮：有批注的一直显示，没批注的鼠标移到高亮上才出现 */
     private placeWidgets(layer: MathLayer, highlights: HiNote[]): void {
         this.clearWidgets(layer);
         const widgets: HTMLElement[] = [];
@@ -406,7 +406,7 @@ export class MathHighlighter {
             widget.style.top = `${point.top}px`;
 
             const comments = highlight.comments || [];
-            const button = CommentWidgetHelper.createButton(widget, false);
+            const button = CommentWidgetHelper.createButton(widget, comments.length > 0);
             const openPanel = () => CommentWidgetHelper.openCommentPanel(this.app, highlight, this.eventManager);
             if (comments.length > 0) {
                 const icon = button.querySelector('.hi-note-icon-container') as HTMLElement;
@@ -416,6 +416,7 @@ export class MathHighlighter {
                 CommentWidgetHelper.setupClickEvent(button, tooltip, openPanel);
                 CommentWidgetHelper.createCleanupObserver(widget, tooltip);
             } else {
+                widget.addClass('hi-note-figure-widget-empty');
                 button.addEventListener('click', event => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -434,7 +435,7 @@ export class MathHighlighter {
         this.widgets.delete(layer);
     }
 
-    /** 鼠标停在高亮上时，才把它的批注按钮露出来 */
+    /** 鼠标停在没批注的高亮上时，才把它的批注按钮露出来 */
     private onMouseMove(event: MouseEvent): void {
         if (this.drag) {
             this.onDragMove(event);
@@ -458,7 +459,9 @@ export class MathHighlighter {
     private setHover(entry: { layer: MathLayer; id: string } | null, on: boolean): void {
         if (!entry) return;
         const widget = this.widgets.get(entry.layer)?.find(w => w.dataset.highlightId === entry.id);
-        widget?.querySelector('.hi-note-button')?.toggleClass('hi-note-button-hidden', !on);
+        // 有批注的图标一直露着，只有没批注的才跟着鼠标出没
+        if (!widget?.hasClass('hi-note-figure-widget-empty')) return;
+        widget.querySelector('.hi-note-button')?.toggleClass('hi-note-button-hidden', !on);
     }
 
     // ── 在公式上拖一个框 ──────────────────────────────────────────────────────
