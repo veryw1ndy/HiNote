@@ -112,4 +112,15 @@ const repoWith = stored => ({ getCachedHighlights: () => stored, findHighlightsB
     assert.ok(!footerClasses.has("hi-note-hidden"), "the date line must come back");
 }
 
+// 7. 编辑模式：批注改了字（条数没变），悬停框要换成新的话，不能留着旧的小部件
+{
+    const { CommentWidget } = await loadTs("src/components/comment/CommentWidget.ts");
+    const h = content => ({ id: "h", text: "home MTSO", position: 4342,
+        comments: [{ id: "c1", content, createdAt: 1, updatedAt: content.length }] });
+    const before = new CommentWidget({}, h("Even when abroad"), () => {});
+    const after = new CommentWidget({}, h("Even when abroad, still that one home MTSO."), () => {});
+    assert.equal(before.eq(after), false, "an edited comment must redraw the hover box");
+    assert.equal(before.eq(new CommentWidget({}, h("Even when abroad"), () => {})), true);
+}
+
 console.log("same words elsewhere: ok");

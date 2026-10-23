@@ -21,6 +21,7 @@ export class MarkdownView {} export class Menu {} export class Modal {} export c
 export class Plugin {} export class FileSystemAdapter {} export class WorkspaceLeaf {}
 export const setIcon = () => {}; export const normalizePath = (s) => s; export const getLinkpath = (s) => s;
 export const debounce = (f) => f;
+export const MarkdownRenderer = { render: async () => {} };
 export const moment = Object.assign(() => ({}), { locale: () => 'en' });
 `;
 

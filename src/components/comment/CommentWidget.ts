@@ -34,7 +34,8 @@ export class CommentWidget extends WidgetType {
         const idMatch = !!this.highlight.id && this.highlight.id === widget.highlight.id;
         const textMatch = this.highlight.text === widget.highlight.text;
         const positionMatch = this.highlight.position === widget.highlight.position;
-        const commentsMatch = (this.highlight.comments?.length ?? 0) === (widget.highlight.comments?.length ?? 0);
+        // 只比条数的话，改了批注内容 CodeMirror 会留着旧的小部件：悬停框一直显示改之前的话
+        const commentsMatch = commentSignature(this.highlight) === commentSignature(widget.highlight);
 
         return (idMatch || (textMatch && positionMatch)) && commentsMatch;
     }
@@ -139,4 +140,8 @@ export class CommentWidget extends WidgetType {
     ignoreEvent(): boolean {
         return true; // 返回 true 以阻止事件冒泡到编辑器，避免激活源码模式
     }
+}
+
+function commentSignature(highlight: HiNote): string {
+    return JSON.stringify((highlight.comments || []).map(c => [c.id, c.content, c.updatedAt]));
 }
