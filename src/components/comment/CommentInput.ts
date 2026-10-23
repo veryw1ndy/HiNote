@@ -27,6 +27,7 @@ export class CommentInput {
     private pressStartedInside = false;
     private commentEl: Element | null = null; // 保存批注元素引用，用于移除 editing 类
     private isOpen = false;
+    private editContext: CommentInputEditContext | null = null;
 
     constructor(
         private card: HTMLElement,
@@ -83,6 +84,7 @@ export class CommentInput {
         this.textarea = renderedInput.textarea;
         this.actionHint = renderedInput.actionHint;
         this.commentEl = renderedInput.commentEl || null;
+        this.editContext = renderedInput.editContext || null;
         this.setupKeyboardEvents(renderedInput.editContext);
 
         // 延迟一下再聚焦，确保DOM已经完全渲染
@@ -205,7 +207,7 @@ export class CommentInput {
         activeDocument.removeEventListener('mousedown', this.boundHandlePressStart, true);
         this.saveController.reset();
         
-        removeCommentInputElements(this.getElements());
+        removeCommentInputElements(this.getElements(), false, this.editContext);
         this.commentEl = null;
     }
     
@@ -223,7 +225,7 @@ export class CommentInput {
         activeDocument.removeEventListener('mousedown', this.boundHandlePressStart, true);
             this.saveController.reset();
             
-            removeCommentInputElements(this.getElements(), true);
+            removeCommentInputElements(this.getElements(), true, this.editContext);
             this.commentEl = null;
         } catch (error) {
             // 捕获任何错误，避免应用冻结

@@ -15,6 +15,8 @@ export interface HighlightMatchResult {
 
 export interface HighlightMatchOptions {
     usedIds?: Set<string>;
+    /** 不按「文字只出现一次」来配，pairStoredHighlights 自己在第二轮做 */
+    skipUniqueText?: boolean;
 }
 
 const TEXT_POSITION_THRESHOLD = 500;
@@ -49,10 +51,51 @@ export function findStoredHighlightMatch(
     const contextMatch = findContextMatch(target, availableCandidates);
     if (contextMatch) return { highlight: contextMatch, confidence: 'context' };
 
+    if (options.skipUniqueText) return null;
     const uniqueTextMatch = findUniqueTextMatch(target, availableCandidates);
     if (uniqueTextMatch) return { highlight: uniqueTextMatch, confidence: 'unique-text' };
 
     return null;
+}
+
+export interface StoredHighlightPair {
+    match: HighlightMatchResult | null;
+}
+
+/**
+ * 把一个笔记里提取到的全部高亮，一次性和存下来的记录配对。每条记录最多配一个高亮。
+ *
+ * 编辑模式的批注图标、阅读模式的 <mark> 和侧栏的卡片都必须用这一个函数：以前三处各配各的，
+ * 编辑模式下的图标拿不到记录的 ID，点它时侧栏只好按文字找卡片，找到的是同名的另一张
+ * （图里的 home MTSO、标题里的同一个词）；正文里同一个词出现两次时，两个都显示同一条批注。
+ *
+ * 先用有把握的办法（ID、块、位置、上下文）配，剩下的才按文字配，而且只在两边都只剩
+ * 一个同样文字的时候：否则第一个出现的会抢走本该属于后面那个的记录。
+ */
+export function pairStoredHighlights(targets: HiNote[], candidates: HiNote[]): StoredHighlightPair[] {
+    const usedIds = new Set<string>();
+    const pairs: StoredHighlightPair[] = targets.map(() => ({ match: null }));
+
+    targets.forEach((target, i) => {
+        const match = findStoredHighlightMatch(target, candidates, { usedIds, skipUniqueText: true });
+        if (match?.highlight.id) {
+            usedIds.add(match.highlight.id);
+            pairs[i].match = match;
+        }
+    });
+
+    const leftover = (text: string) => targets.filter((t, i) => !pairs[i].match && !t.figure && t.text === text).length;
+    targets.forEach((target, i) => {
+        if (pairs[i].match || target.figure || !target.text || leftover(target.text) !== 1) return;
+        const available = filterAvailableCandidates(candidates.filter(c => !c.figure), usedIds);
+        const match = findUniqueTextMatch(target, available);
+        if (match?.id) {
+            usedIds.add(match.id);
+            pairs[i].match = { highlight: match, confidence: 'unique-text' };
+        }
+    });
+
+    return pairs;
 }
 
 /**

@@ -46,9 +46,8 @@ export class PreviewHighlightResolver {
     ): PreviewHighlight[] {
         // 不再过滤掉"还没有评论"的高亮：阅读模式下也要能对它们添加批注，
         // 否则悬停时根本没有图标可点。
-        return rawHighlights
-            .map(highlight => this.enrichHighlight(highlight, file))
-            .map(highlight => ({
+        return this.commentResolver.resolveAll(file, rawHighlights)
+            .map(({ highlight }) => ({
                 ...highlight,
                 line: this.getLineForPosition(content, highlight.position)
             }));
@@ -124,20 +123,31 @@ export class PreviewHighlightResolver {
         highlightsWithComments: PreviewHighlight[]
     ): PreviewHighlight | null {
         const sectionInfo = this.getSectionInfo(mark, rootElement, context);
+        const sameText = highlightsWithComments.filter(highlight => this.sameText(highlight.text, text));
 
+        // 不知道这个 <mark> 在原文哪几行：只有全篇就这一个时才敢配，
+        // 否则按文字挑第一个，标题里、正文里、表格里的同一个词就全配到同一条上了。
         if (!sectionInfo) {
-            return highlightsWithComments.find(highlight => this.sameText(highlight.text, text)) || null;
+            return sameText.length === 1 ? sameText[0] : null;
         }
 
-        return highlightsWithComments.find(highlight =>
-            this.sameText(highlight.text, text) &&
-            highlight.line >= sectionInfo.lineStart &&
-            highlight.line <= sectionInfo.lineEnd
-        ) || null;
-    }
+        const inSection = sameText
+            .filter(highlight =>
+                highlight.line >= sectionInfo.lineStart &&
+                highlight.line <= sectionInfo.lineEnd
+            )
+            .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+        if (inSection.length <= 1) return inSection[0] || null;
 
-    private enrichHighlight(highlight: HiNote, file: TFile): HiNote {
-        return this.commentResolver.resolveHighlight(file, highlight);
+        // 同一段（同一张表）里这几个字划了不止一次：第几个 <mark> 就配第几个高亮。
+        const sameSectionMarks = Array.from(rootElement.querySelectorAll('mark, span.highlight'))
+            .filter(other => {
+                if (!this.sameText(this.markText(other), text)) return false;
+                const otherSection = this.getSectionInfo(other, rootElement, context);
+                return otherSection?.lineStart === sectionInfo.lineStart;
+            });
+        const index = sameSectionMarks.indexOf(mark);
+        return index >= 0 ? inSection[index] || null : null;
     }
 
     private getSectionInfo(
@@ -145,13 +155,17 @@ export class PreviewHighlightResolver {
         rootElement: HTMLElement,
         context: MarkdownPostProcessorContext
     ): { lineStart: number; lineEnd: number } | null {
+        // 往外找到第一个说得出自己在原文哪几行的块。最近的那个块（callout 里的 <p>）常常说不出。
         let block = mark.parentElement;
-
-        while (block && !this.isBlockElement(block) && block !== rootElement) {
+        while (block) {
+            if (this.isBlockElement(block) || block === rootElement) {
+                const info = context.getSectionInfo(block);
+                if (info) return info;
+            }
+            if (block === rootElement) return null;
             block = block.parentElement;
         }
-
-        return block ? context.getSectionInfo(block) : null;
+        return null;
     }
 
     private isBlockElement(element: Element): boolean {

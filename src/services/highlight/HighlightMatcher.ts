@@ -3,7 +3,8 @@ import { HighlightInfo } from '../../types/highlight';
 import { HighlightRepository } from '../../repositories/HighlightRepository';
 import {
     canUpdateStoredHighlight,
-    findStoredHighlightMatch
+    findStoredHighlightMatch,
+    pairStoredHighlights
 } from './HighlightMatchStrategies';
 import type { HighlightMatchConfidence } from './HighlightMatchStrategies';
 
@@ -71,9 +72,10 @@ export class HighlightMatcher {
         // 收集需要更新定位锚点的高亮，在合并完成后批量异步更新存储
         const highlightUpdates: StoredHighlightUpdate[] = [];
         
-        // 合并高亮和评论数据
-        const mergedHighlights = highlights.map(highlight => {
-            const match = findStoredHighlightMatch(highlight, storedComments, { usedIds: usedCommentIds });
+        // 合并高亮和评论数据。和编辑模式、阅读模式用同一个配对，三处的 ID 才对得上
+        const pairs = pairStoredHighlights(highlights, storedComments);
+        const mergedHighlights = highlights.map((highlight, i) => {
+            const match = pairs[i].match;
             const storedComment = match?.highlight;
             if (storedComment?.id && match) {
                 usedCommentIds.add(storedComment.id);

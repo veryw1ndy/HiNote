@@ -6,6 +6,9 @@ import { CommentWidgetHelper, COMMENT_THREAD_CLASS, hasCommentThread } from '../
 import { PreviewHighlightResolver } from "./PreviewHighlightResolver";
 import type { HiNotePluginContext } from "../../../types/plugin";
 
+/** HiNote 自己渲染出来的地方：批注、悬停框、侧栏卡片的高亮文字、闪卡 */
+const NOT_NOTE_TEXT = '.hi-note-content, .hi-note-tooltip-content, .highlight-text-content, .hi-note-tooltip, .flashcard-content-area';
+
 /**
  * 阅读模式下的批注小部件渲染器
  * 负责在阅读模式（Preview Mode）中渲染批注图标和工具提示
@@ -39,7 +42,10 @@ export class PreviewWidgetRenderer {
         if (!this.highlightService.shouldProcessFile(file)) return;
 
         // 查找高亮元素
-        const marks = Array.from(element.querySelectorAll('mark, span.highlight'));
+        // 批注、悬停框、侧栏卡片和闪卡里的文字也是按这篇笔记渲染的，里面的 ==…== 不是笔记的高亮，
+        // 不能配到笔记的高亮上去（批注里写 ==abroad==，就会多出一个指向别处的批注图标）。
+        const marks = Array.from(element.querySelectorAll('mark, span.highlight'))
+            .filter(mark => !mark.closest(NOT_NOTE_TEXT) && !element.matches(NOT_NOTE_TEXT));
         if (marks.length === 0) return;
 
         marks.forEach(mark => this.markContexts.set(mark, { root: element, context }));
@@ -96,6 +102,8 @@ export class PreviewWidgetRenderer {
         marks.forEach((mark) => {
             const rendered = this.markContexts.get(mark);
             if (!rendered) return;
+            // post processor 跑的时候这段可能还没挂进批注里，读完文件以后再看一次
+            if (mark.closest(NOT_NOTE_TEXT)) return;
 
             if (reset) {
                 this.clearMark(mark);

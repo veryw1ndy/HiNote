@@ -1,11 +1,19 @@
 import { App, Events, EventRef } from 'obsidian';
 
+/** 点了哪个高亮的批注图标。ID 对不上侧栏卡片时，靠位置和种类挑最近的同名卡片 */
+export interface CommentInputTarget {
+    id?: string;
+    text: string;
+    position?: number;
+    figure?: unknown;
+}
+
 export interface HighlightEvents {
     'highlight:update': [filePath: string, oldText: string, newText: string, sourceId: string];
     'highlight:delete': [filePath: string, text: string, sourceId: string];
     'comment:update': [filePath: string, oldComment: string, newComment: string, sourceId: string];
     'comment:delete': [filePath: string, comment: string, sourceId: string];
-    'comment-input:open': [highlightId: string, text: string];
+    'comment-input:open': [highlightId: string, text: string, highlight?: CommentInputTarget];
     'flashcard:changed': [];
     'figure-highlight:change': [filePath: string];
 }
@@ -48,8 +56,8 @@ export class EventManager {
     /**
      * 触发打开评论输入框事件
      */
-    public emitCommentInputOpen(highlightId: string, text: string) {
-        this.events.trigger('comment-input:open', highlightId, text);
+    public emitCommentInputOpen(highlightId: string, text: string, highlight?: CommentInputTarget) {
+        this.events.trigger('comment-input:open', highlightId, text, highlight);
     }
 
     /**

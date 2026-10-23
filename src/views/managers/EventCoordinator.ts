@@ -1,7 +1,7 @@
 import { App, TFile, Component, EventRef, MarkdownView } from "obsidian";
 import { defaultHighlightCardRegistry } from "../../components/highlight";
 import { HighlightInfo as HiNote } from "../../types/highlight";
-import type { EventManager } from "../../services/EventManager";
+import type { CommentInputTarget, EventManager } from "../../services/EventManager";
 
 /**
  * 事件回调接口
@@ -12,7 +12,7 @@ export interface EventCallbacks {
     onFileCreate?: () => void;
     onFileDelete?: () => void;
     onLayoutChange?: () => void;
-    onCommentInput?: (highlightId: string, text: string) => void;
+    onCommentInput?: (highlightId: string, text: string, highlight?: CommentInputTarget) => void;
 }
 
 /**
@@ -175,9 +175,9 @@ export class EventCoordinator {
      * 注册评论输入事件
      */
     private registerCommentInputEvent(): void {
-        const ref = this.eventManager.on('comment-input:open', (highlightId, text) => {
+        const ref = this.eventManager.on('comment-input:open', (highlightId, text, highlight) => {
             if (this.callbacks.onCommentInput) {
-                this.callbacks.onCommentInput(highlightId, text);
+                this.callbacks.onCommentInput(highlightId, text, highlight);
             }
         });
 
@@ -212,6 +212,7 @@ export class EventCoordinator {
     handleCommentInputDisplay(
         highlightId: string,
         text: string,
+        highlight: CommentInputTarget | undefined,
         highlightContainer: HTMLElement,
         onShowCommentInput: (card: HTMLElement, highlight: HiNote) => void
     ): void {
@@ -222,33 +223,17 @@ export class EventCoordinator {
                 card.removeClass('selected');
             });
 
-            // 首先尝试直接通过高亮 ID 查找卡片实例
-            let cardInstance = defaultHighlightCardRegistry.findByHighlightId(highlightId);
-            
-            // 如果没找到，尝试通过文本内容查找
-            if (!cardInstance) {
-                const highlightCard = Array.from(highlightContainer.querySelectorAll('.highlight-card'))
-                    .find(card => {
-                        const textContent = card.querySelector('.highlight-text-content')?.textContent;
-                        return textContent === text;
-                    });
+            // 先按 ID 找；找不到才按文字，而且只挑同一类（图里的 / 正文里的）、离得最近的那张。
+            // 以前按文字找的是「第一张文字一样的」：点正文的 home MTSO，打开的是图里那张。
+            const cardInstance = defaultHighlightCardRegistry.findByHighlight(highlight ?? { id: highlightId, text });
+            if (!cardInstance) return;
 
-                if (highlightCard) {
-                    // 添加选中状态
-                    highlightCard.addClass('selected');
-                    
-                    // 查找 HighlightCard 实例
-                    cardInstance = defaultHighlightCardRegistry.findByElement(highlightCard as HTMLElement);
-                    
-                    // 滚动到评论区域
-                    highlightCard.scrollIntoView({ behavior: "smooth" });
-                }
-            }
-            
-            // 如果找到了卡片实例，显示评论输入框
-            if (cardInstance) {
-                cardInstance.showCommentInput();
-            }
+            const cardElement = cardInstance.getElement();
+            if (!highlightContainer.contains(cardElement)) return;
+
+            cardElement.addClass('selected');
+            cardElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            cardInstance.showCommentInput();
         }, 100);
     }
 

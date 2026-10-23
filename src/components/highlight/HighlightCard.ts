@@ -157,6 +157,10 @@ export class HighlightCard {
         return this.highlight.id;
     }
 
+    public getHighlight(): HighlightInfo {
+        return this.highlight;
+    }
+
     public clearUnfocusedInput(): void {
         this.selectionController.removeUnfocusedInput();
     }

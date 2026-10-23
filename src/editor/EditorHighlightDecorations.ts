@@ -43,15 +43,14 @@ export function createEditorHighlightDecorations(options: EditorHighlightDecorat
             const decorations: Range<Decoration>[] = [];
             const highlights = highlightService.extractHighlights(view.state.doc.toString(), file);
 
-            for (const highlight of highlights) {
+            // 整篇一起配，拿到存下来的记录的 ID。以前这里只配批注、ID 还是临时算的，
+            // 点图标时侧栏按 ID 找不到卡片，就按文字随便挑了一张同名的（图里的、标题里的）。
+            for (const { highlight, stored } of highlightCommentResolver.resolveAll(file, highlights)) {
                 if (highlight.position === undefined) continue;
 
-                const commentHighlight = highlightCommentResolver.normalizeHighlight(highlight);
-                commentHighlight.comments = highlightCommentResolver.getCommentsForHighlight(file, commentHighlight, {
-                    onTextChanged: (storedHighlight, currentHighlight) => {
-                        emitHighlightTextChange(plugin, file, storedHighlight, currentHighlight);
-                    }
-                });
+                if (stored && stored.text !== highlight.text) {
+                    emitHighlightTextChange(plugin, file, stored, highlight);
+                }
 
                 const docLength = view.state.doc.length;
                 const highlightEndPos = Math.min(
@@ -60,7 +59,7 @@ export function createEditorHighlightDecorations(options: EditorHighlightDecorat
                 );
 
                 // 有批注的高亮换个颜色。标记必须有长度，零长度 CM6 会报错。
-                if (hasCommentThread(commentHighlight) && highlightEndPos > highlight.position) {
+                if (hasCommentThread(highlight) && highlightEndPos > highlight.position) {
                     decorations.push(
                         Decoration.mark({ class: COMMENT_THREAD_CLASS })
                             .range(highlight.position, highlightEndPos)
@@ -68,7 +67,7 @@ export function createEditorHighlightDecorations(options: EditorHighlightDecorat
                 }
 
                 if (shouldShowCommentWidget(plugin)) {
-                    decorations.push(createCommentWidget(plugin, commentHighlight).range(highlightEndPos));
+                    decorations.push(createCommentWidget(plugin, highlight).range(highlightEndPos));
                 }
             }
 

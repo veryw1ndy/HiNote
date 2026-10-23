@@ -33,7 +33,23 @@ export function restoreOrRemoveCommentInput(
     }
 }
 
-export function removeCommentInputElements(elements: CommentInputElements, safe = false): void {
+/**
+ * 关掉输入框。改批注时输入框是顶替批注正文放进去的、日期那行也藏起来了：
+ * 只把输入框拿掉的话，正文和日期都没了，卡片里只剩「展开/收起」按钮，点了什么也不出来。
+ * 保存后卡片会整个重画，那时输入框早已不在页面上，这里就什么都不用做；
+ * 没重画（内容没变、或者没找到要重画的卡片）时，把原来的正文和日期放回去。
+ */
+export function removeCommentInputElements(
+    elements: CommentInputElements,
+    safe = false,
+    editContext?: CommentInputEditContext | null
+): void {
+    const { textarea } = elements;
+    if (textarea?.isConnected && editContext?.contentEl) {
+        textarea.replaceWith(editContext.contentEl);
+    }
+    editContext?.footer?.removeClass('hi-note-hidden');
+
     removeElement(elements.textarea, safe);
     removeElement(elements.actionHint, safe);
 

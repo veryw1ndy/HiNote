@@ -230,7 +230,7 @@ export class CommentWidgetHelper {
             }
         }
         
-        eventManager.emitCommentInputOpen(highlight.id || '', highlight.text);
+        eventManager.emitCommentInputOpen(highlight.id || '', highlight.text, highlight);
     }
 
     /**

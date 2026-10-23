@@ -75,10 +75,11 @@ export function registerHiNoteViewEvents(options: HiNoteViewEventBindingOptions)
         onLayoutChange: () => {
             void checkViewPosition();
         },
-        onCommentInput: (highlightId, text) => {
+        onCommentInput: (highlightId, text, highlight) => {
             eventCoordinator.handleCommentInputDisplay(
                 highlightId,
                 text,
+                highlight,
                 highlightContainer,
                 (card, highlight) => commentController.showCommentInput(card, highlight)
             );
